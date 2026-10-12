@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tra tên nhân vật</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5f2; --panel:#ffffff; --ink:#1d2a27; --muted:#5d6c68; --line:#d5dcd8;
+  --accent:#1f7a68; --accent-ink:#ffffff; --soft:#e2efeb; --warn:#a4452c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121817; --panel:#1b2422; --ink:#e6eeeb; --muted:#93a39e; --line:#31403c;
+    --accent:#59c3ab; --accent-ink:#0c1b17; --soft:#22332f; --warn:#e58a6f;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans SC",sans-serif;
+  -webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:1.35rem;margin:6px 0 2px;letter-spacing:-.01em}
+h2{font-size:1rem;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:.92rem}
+section,details{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+summary{cursor:pointer;font-weight:600;min-height:28px}
+details[open] summary{margin-bottom:10px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px;margin-top:10px}
+label:first-of-type{margin-top:0}
+.row{display:flex;gap:8px;align-items:stretch}
+input[type=text],input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:46px}
+.zh{font-size:1.4rem}
+.la{font-size:1.3rem}
+input:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button,.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:10px;padding:10px 14px;min-height:46px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button[disabled]{opacity:.55;cursor:default}
+button:active{transform:translateY(1px)}
+.note{margin:8px 0 0;font-size:.88rem;color:var(--muted);min-height:1.3em}
+.note.warn{color:var(--warn)}
+.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.links .btn{min-height:40px;font-size:.92rem}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .15s}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Tra tên nhân vật</h1>
+  <p class="sub">Dán chữ Trung vào ô là tên Latin hiện ngay bên dưới. Bấm Đảo để đổi thứ tự, rồi Copy.</p>
+
+  <details id="settings">
+    <summary>Cài đặt Gemini</summary>
+    <label for="key">Key Gemini (lấy ở Google AI Studio)</label>
+    <input type="password" id="key" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Dán key vào đây">
+    <label for="model">Tên model</label>
+    <input type="text" id="model" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="gemini-2.5-flash">
+    <div class="row" style="margin-top:10px">
+      <button id="saveKey" class="primary" type="button" style="flex:1">Lưu</button>
+      <button id="clearKey" type="button" style="flex:1">Xóa key</button>
+    </div>
+    <p class="hint">Key chỉ lưu trong trình duyệt trên máy này, không nằm trong file. Khi tra, trang gửi chữ Trung và key thẳng tới Google, không qua máy chủ nào khác.</p>
+  </details>
+
+  <section aria-labelledby="s1">
+    <h2 id="s1">Chữ Trung</h2>
+    <label for="zh">Dán hoặc gõ tên</label>
+    <div class="row">
+      <input type="text" id="zh" class="zh" lang="zh" placeholder="纲手" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <button id="go" class="primary" type="button">Tra</button>
+    </div>
+    <div class="links">
+      <a id="lkG" class="btn" target="_blank" rel="noopener noreferrer" href="#">Mở Google</a>
+      <a id="lkB" class="btn" target="_blank" rel="noopener noreferrer" href="#">Mở Baidu</a>
+    </div>
+  </section>
+
+  <section aria-labelledby="s2">
+    <h2 id="s2">Tên Latin</h2>
+    <label for="la">Kết quả (sửa tay được)</label>
+    <input type="text" id="la" class="la" placeholder="Tsunade" autocomplete="off" autocapitalize="words" spellcheck="false">
+    <p id="note" class="note" role="status" aria-live="polite"></p>
+    <div class="row" style="margin-top:10px">
+      <button id="swap" class="primary" type="button" style="flex:1">Đảo</button>
+      <button id="copy" type="button" style="flex:1">Copy</button>
+    </div>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id)};
+  var zh = $('zh'), la = $('la'), note = $('note'), go = $('go');
+  var KEY_K = 'tratenGeminiKey', MODEL_K = 'tratenGeminiModel';
+  var DEFAULT_MODEL = 'gemini-2.5-flash';
+  var reqId = 0, ctrl = null, debounce = null;
+  var mem = {};
+
+  function store(k, v){ mem[k] = v; try{ if(v) localStorage.setItem(k, v); else localStorage.removeItem(k); }catch(e){} }
+  function load(k){ try{ var v = localStorage.getItem(k); if(v !== null) return v; }catch(e){} return mem[k] || ''; }
+
+  function toast(msg){
+    var t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toast._h); toast._h = setTimeout(function(){t.classList.remove('on')}, 1400);
+  }
+  function setNote(msg, warn){ note.textContent = msg || ''; note.className = 'note' + (warn ? ' warn' : ''); }
+
+  function copy(text){
+    if(!text){ toast('Chưa có gì để copy'); return; }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      toast(ok ? 'Đã copy' : 'Không copy được, hãy chọn và copy tay');
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){toast('Đã copy')}, fallback);
+    } else fallback();
+  }
+
+  /* Cài đặt */
+  $('key').value = load(KEY_K);
+  $('model').value = load(MODEL_K);
+  if(!load(KEY_K)) $('settings').open = true;
+  $('saveKey').addEventListener('click', function(){
+    var k = $('key').value.trim(), m = $('model').value.trim();
+    if(!k){ toast('Chưa nhập key'); return; }
+    store(KEY_K, k); store(MODEL_K, m);
+    $('settings').open = false; toast('Đã lưu');
+  });
+  $('clearKey').addEventListener('click', function(){
+    store(KEY_K, ''); $('key').value = ''; toast('Đã xóa key');
+  });
+
+  function updateLinks(){
+    var q = encodeURIComponent(zh.value.trim());
+    $('lkG').href = q ? 'https://www.google.com/search?q='+q+'+English+name&hl=en&lr=lang_en' : '#';
+    $('lkB').href = q ? 'https://www.baidu.com/s?wd='+q : '#';
+  }
+  ['lkG','lkB'].forEach(function(id){
+    $(id).addEventListener('click', function(e){ if(!zh.value.trim()){ e.preventDefault(); toast('Nhập chữ Trung trước'); } });
+  });
+
+  function prompt(t){
+    return 'Chữ Trung dưới đây là tên một nhân vật trong truyện, tiểu thuyết, anime hoặc game: "'+t+'".\n'
+      + 'Hãy trả về tên Latin chuẩn: nếu là nhân vật có tên quốc tế (Nhật, Hàn, phương Tây) thì dùng romaji hoặc tên tiếng Anh chính thức, '
+      + 'giữ đúng thứ tự gốc của tên (tên Nhật thì họ trước, tên sau). '
+      + 'Nếu là nhân vật Trung Quốc thì dùng pinyin không dấu thanh, viết hoa chữ cái đầu mỗi chữ. '
+      + 'Nếu không chắc, vẫn đưa tên tốt nhất và đặt "sure" là false.\n'
+      + 'Chỉ trả về JSON dạng: {"name":"Tên Latin","sure":true,"from":"tên truyện hoặc tác phẩm nếu biết, nếu không thì chuỗi rỗng"}';
+  }
+
+  function lookup(){
+    var t = zh.value.trim();
+    updateLinks();
+    if(!t){ toast('Nhập chữ Trung trước'); return; }
+    var key = load(KEY_K);
+    if(!key){ $('settings').open = true; setNote('Cần nhập key Gemini ở phần Cài đặt trước.', true); $('key').focus(); return; }
+    var model = load(MODEL_K) || DEFAULT_MODEL;
+    var my = ++reqId;
+    if(ctrl){ try{ ctrl.abort(); }catch(e){} }
+    ctrl = new AbortController();
+    var timer = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 25000);
+    go.disabled = true; setNote('Đang tra...');
+
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'x-goog-api-key': key},
+      body: JSON.stringify({
+        contents: [{parts: [{text: prompt(t)}]}],
+        generationConfig: {temperature: 0, responseMimeType: 'application/json'}
+      }),
+      signal: ctrl.signal
+    }).then(function(r){
+      return r.json().catch(function(){return {};}).then(function(j){ return {status:r.status, ok:r.ok, body:j}; });
+    }).then(function(res){
+      clearTimeout(timer);
+      if(my !== reqId) return;
+      go.disabled = false;
+      if(!res.ok){
+        var msg = (res.body && res.body.error && res.body.error.message) || '';
+        if(res.status === 400 && /key/i.test(msg)) setNote('Key không đúng, kiểm tra lại ở Cài đặt.', true);
+        else if(res.status === 401 || res.status === 403) setNote('Key bị từ chối. Kiểm tra key hoặc quyền truy cập.', true);
+        else if(res.status === 404) setNote('Không tìm thấy model "' + model + '". Sửa tên model ở Cài đặt.', true);
+        else if(res.status === 429) setNote('Đã chạm giới hạn số lần tra. Đợi một lát rồi tra lại.', true);
+        else setNote('Lỗi ' + res.status + (msg ? ': ' + msg : ''), true);
+        return;
+      }
+      var text = '';
+      try{ text = res.body.candidates[0].content.parts[0].text; }catch(e){}
+      var data = null;
+      var m = (text || '').match(/\{[\s\S]*\}/);
+      if(m){ try{ data = JSON.parse(m[0]); }catch(e){} }
+      if(!data || !data.name){ setNote('Không đọc được kết quả, thử bấm Tra lại.', true); return; }
+      la.value = String(data.name).replace(/\s+/g,' ').trim();
+      var from = data.from ? ' Nguồn gợi ý: ' + data.from + '.' : '';
+      if(data.sure === false) setNote('Chưa chắc chắn, nên kiểm tra bằng Mở Google.' + from, true);
+      else setNote('Đã tra xong.' + from);
+    }).catch(function(err){
+      clearTimeout(timer);
+      if(my !== reqId) return;
+      go.disabled = false;
+      if(err && err.name === 'AbortError') setNote('Tra quá lâu, bấm Tra lại.', true);
+      else setNote('Không kết nối được tới Gemini. Kiểm tra mạng rồi thử lại.', true);
+    });
+  }
+
+  go.addEventListener('click', lookup);
+  zh.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); lookup(); } });
+
+  /* Dán thẳng vào ô là tự tra, không cần quyền clipboard */
+  zh.addEventListener('paste', function(e){
+    var t = '';
+    try{ t = (e.clipboardData || window.clipboardData).getData('text'); }catch(err){}
+    if(t){
+      e.preventDefault();
+      zh.value = t.replace(/\s+/g,' ').trim();
+      lookup();
+    }
+  });
+  zh.addEventListener('input', function(e){
+    updateLinks();
+    var multi = e.inputType === 'insertFromPaste' || (e.data && e.data.length > 1);
+    if(multi && zh.value.trim()){
+      clearTimeout(debounce);
+      debounce = setTimeout(lookup, 500);
+    }
+  });
+
+  /* Đảo tên đang hiển thị: 1 chữ giữ nguyên, 2 chữ đảo, 3 chữ trở lên chuyển chữ đầu xuống cuối */
+  $('swap').addEventListener('click', function(){
+    var s = la.value.replace(/\s+/g,' ').trim();
+    if(!s){ toast('Chưa có tên để đảo'); return; }
+    var w = s.split(' ');
+    if(w.length === 1){ toast('Tên chỉ có một chữ'); return; }
+    la.value = (w.length === 2) ? (w[1]+' '+w[0]) : w.slice(1).concat(w[0]).join(' ');
+  });
+  $('copy').addEventListener('click', function(){ copy(la.value.trim()); });
+
+  /* Mở nhanh từ vBook: ...?q=纲手 sẽ điền và tra luôn */
+  try{
+    var p = new URLSearchParams(location.search);
+    if(p.get('q')){ zh.value = p.get('q'); lookup(); }
+  }catch(e){}
+  updateLinks();
+})();
+</script>
+</body>
+</html>

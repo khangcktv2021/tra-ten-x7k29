@@ -48,6 +48,10 @@ button:active{transform:translateY(1px)}
 .hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
 .links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .links .btn{min-height:40px;font-size:.92rem}
+.tabs{display:flex;gap:8px;margin:0 0 14px}
+.tabs a{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);text-decoration:none;font-weight:600}
+.tabs a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tabs a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
   background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .15s}
 #toast.on{opacity:1}
@@ -56,6 +60,11 @@ button:active{transform:translateY(1px)}
 </head>
 <body>
 <main>
+  <nav class="tabs" aria-label="Chức năng">
+    <a href="index.html" aria-current="page">Tra tên</a>
+    <a href="chia-chuong.html">Chia chương</a>
+    <a href="tao-epub.html">Tạo EPUB</a>
+  </nav>
   <h1>Tra tên nhân vật</h1>
   <p class="sub">Dán chữ Trung vào ô là tên Latin hiện ngay bên dưới. Bấm Đảo để đổi thứ tự, rồi Copy.</p>
 
@@ -174,14 +183,19 @@ button:active{transform:translateY(1px)}
     if(ctrl){ try{ ctrl.abort(); }catch(e){} }
     ctrl = new AbortController();
     var timer = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 25000);
+    var t0 = Date.now();
     go.disabled = true; setNote('Đang tra...');
+
+    var genCfg = {temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 200};
+    /* Các model này mặc định "suy nghĩ" trước khi trả lời nên chậm; tắt đi cho việc tra tên đơn giản */
+    if(/gemini-2\.5|gemini-3\.[78]-flash/.test(model)) genCfg.thinkingConfig = {thinkingBudget: 0};
 
     fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
       method: 'POST',
       headers: {'Content-Type':'application/json', 'x-goog-api-key': key},
       body: JSON.stringify({
         contents: [{parts: [{text: prompt(t)}]}],
-        generationConfig: {temperature: 0, responseMimeType: 'application/json'}
+        generationConfig: genCfg
       }),
       signal: ctrl.signal
     }).then(function(r){
@@ -207,8 +221,9 @@ button:active{transform:translateY(1px)}
       if(!data || !data.name){ setNote('Không đọc được kết quả, thử bấm Tra lại.', true); return; }
       la.value = String(data.name).replace(/\s+/g,' ').trim();
       var from = data.from ? ' Nguồn gợi ý: ' + data.from + '.' : '';
-      if(data.sure === false) setNote('Chưa chắc chắn, nên kiểm tra bằng Mở Google.' + from, true);
-      else setNote('Đã tra xong.' + from);
+      var secs = ((Date.now() - t0) / 1000).toFixed(1) + ' giây';
+      if(data.sure === false) setNote('Chưa chắc chắn, nên kiểm tra bằng Mở Google.' + from + ' (' + secs + ')', true);
+      else setNote('Đã tra xong trong ' + secs + '.' + from);
     }).catch(function(err){
       clearTimeout(timer);
       if(my !== reqId) return;

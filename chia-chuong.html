@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chia chương truyện Trung</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5f2; --panel:#ffffff; --ink:#1d2a27; --muted:#5d6c68; --line:#d5dcd8;
+  --accent:#1f7a68; --accent-ink:#ffffff; --soft:#e2efeb; --warn:#a4452c;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121817; --panel:#1b2422; --ink:#e6eeeb; --muted:#93a39e; --line:#31403c;
+    --accent:#59c3ab; --accent-ink:#0c1b17; --soft:#22332f; --warn:#e58a6f;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans SC",sans-serif;
+  -webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:1.35rem;margin:6px 0 2px;letter-spacing:-.01em}
+h2{font-size:1rem;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:.92rem}
+section,details{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+summary{cursor:pointer;font-weight:600;min-height:28px}
+details[open] summary{margin-bottom:10px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px;margin-top:10px}
+label:first-of-type{margin-top:0}
+.row{display:flex;gap:8px;align-items:stretch}
+input[type=text],input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:46px}
+.zh{font-size:1.4rem}
+.la{font-size:1.3rem}
+input:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button,.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:10px;padding:10px 14px;min-height:46px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button[disabled]{opacity:.55;cursor:default}
+button:active{transform:translateY(1px)}
+.note{margin:8px 0 0;font-size:.88rem;color:var(--muted);min-height:1.3em}
+.note.warn{color:var(--warn)}
+.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.links .btn{min-height:40px;font-size:.92rem}
+.tabs{display:flex;gap:8px;margin:0 0 14px}
+.tabs a{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);text-decoration:none;font-weight:600}
+.tabs a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tabs a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .15s}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+[hidden]{display:none!important}
+select{width:100%;min-height:46px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+textarea{width:100%;min-height:96px;resize:vertical;font:inherit;line-height:1.5;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+input[type=file]{width:100%;font:inherit;color:var(--ink);padding:6px 0}
+label.chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:.92rem;color:var(--muted)}
+label.chk input{width:18px;height:18px;flex:0 0 auto}
+.chcount{font-size:1.3rem;font-weight:700;margin:16px 0 10px}
+details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
+.chlist{max-height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+.chname{display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:.92rem}
+.chname:last-child{border-bottom:0}
+.chname .n{color:var(--muted);flex:0 0 3.2em}
+.chname .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.fmtrow{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--line)}
+.fmtrow:last-child{border-bottom:0}
+.fmtrow input[type=checkbox]{width:20px;height:20px;margin-top:3px;flex:0 0 auto}
+.fmtrow .m{flex:1;min-width:0}
+.fmtrow .s{font-weight:600;overflow-wrap:anywhere}
+.fmtrow .e{display:block;font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
+.fmtrow .c{color:var(--muted);font-size:.85rem;white-space:nowrap;padding-top:2px}
+.fmtrow button{min-height:36px;padding:4px 10px;font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <nav class="tabs" aria-label="Chức năng">
+    <a href="index.html">Tra tên</a>
+    <a href="chia-chuong.html" aria-current="page">Chia chương</a>
+    <a href="tao-epub.html">Tạo EPUB</a>
+  </nav>
+  <h1>Chia chương truyện Trung</h1>
+  <p class="sub">Chọn file .txt, chọn một trong 6 cách chia, bấm bắt đầu. Trang chia chương và tạo luôn thành sách .epub có mục lục, đúng thứ tự trong file.</p>
+
+  <section aria-labelledby="s1">
+    <h2 id="s1">Chia chương</h2>
+    <label for="chFile">File truyện (.txt)</label>
+    <input type="file" id="chFile" accept=".txt,text/plain">
+    <p id="chFileInfo" class="hint"></p>
+
+    <label for="chKind">Kiểu tiêu đề chương</label>
+    <select id="chKind">
+      <option value="common">Theo định dạng phổ biến</option>
+      <option value="sample">Theo định dạng khác</option>
+      <option value="scan">Theo định dạng danh sách</option>
+      <option value="opening">Theo định dạng không tiêu đề</option>
+      <option value="manual">Theo định dạng thủ công</option>
+      <option value="parts">Chia nhỏ file</option>
+    </select>
+
+    <div id="chSampleWrap" hidden>
+      <label for="chSample">Mỗi dòng một kiểu tiêu đề mẫu, chép từ truyện</label>
+      <textarea id="chSample" lang="zh" placeholder="第一章 初入江湖&#10;二.&#10;第10章 重逢" spellcheck="false"></textarea>
+      <p class="hint">Truyện có nhiều kiểu tiêu đề lẫn nhau thì mỗi kiểu chép một dòng. Chương nào khớp kiểu nào cũng được tách, theo đúng thứ tự trong file.</p>
+    </div>
+
+    <div id="chOpenWrap" hidden>
+      <label for="chOpen">Đoạn mở đầu của từng chương theo thứ tự, mỗi dòng một chương (4 đến 5 chữ đầu)</label>
+      <textarea id="chOpen" lang="zh" placeholder="他走进客栈&#10;夜里下起了&#10;天亮之后" spellcheck="false"></textarea>
+      <p class="hint">Trang tìm lần lượt từng đoạn trong file (bỏ qua khoảng trắng) rồi cắt chương tại đó. Đoạn quá ngắn mà xuất hiện nhiều chỗ thì trang sẽ báo, khi đó hãy nhập dài hơn (8 đến 10 chữ).</p>
+    </div>
+
+    <div id="chManualWrap" hidden>
+      <p class="hint">Mở file truyện bằng trình soạn thảo, gõ <b>////</b> vào chỗ muốn ngắt chương rồi lưu lại và chọn file đó. Mỗi chỗ có //// là bắt đầu một chương mới. Nếu có chữ cùng dòng sau //// (ví dụ <b>//// 第3章 重逢</b>) thì chữ đó là tên chương, không có thì đặt tên theo mẫu bên dưới.</p>
+    </div>
+
+    <div id="chNameWrap" hidden>
+      <div class="two">
+        <div>
+          <label for="chTpl">Mẫu tên chương ({n} là số thứ tự)</label>
+          <input type="text" id="chTpl" value="第{n}章" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="chStart">Bắt đầu từ số</label>
+          <input type="text" id="chStart" value="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div id="chOpenWrap" hidden>
+      <label for="chOpen">Đoạn mở đầu của từng chương theo thứ tự, mỗi dòng một chương (4 đến 5 chữ đầu)</label>
+      <textarea id="chOpen" lang="zh" placeholder="他走进客栈&#10;夜里下起了&#10;天亮之后" spellcheck="false"></textarea>
+      <p class="hint">Dùng cho file không có tiêu đề. Trang tìm lần lượt từng đoạn trong file (bỏ qua khoảng trắng) rồi cắt chương tại đó và đặt tên theo mẫu bên dưới. Nếu thấy cảnh báo đoạn bị trùng, hãy nhập dài hơn (8 đến 10 chữ).</p>
+    </div>
+
+    <div id="chNameWrap" hidden>
+      <div class="two">
+        <div>
+          <label for="chTpl">Mẫu tên chương ({n} là số thứ tự)</label>
+          <input type="text" id="chTpl" value="第{n}章" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="chStart">Bắt đầu từ số</label>
+          <input type="text" id="chStart" value="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div id="chPartsWrap" hidden>
+      <label for="chParts">Chia file thành bao nhiêu phần</label>
+      <input type="text" id="chParts" value="3" inputmode="numeric" autocomplete="off">
+      <p class="hint">File được cắt thành các phần có độ dài gần bằng nhau, luôn cắt ở cuối đoạn văn, không cắt giữa câu. Tên file là Phần 1, Phần 2, ...</p>
+    </div>
+
+    <div id="chScanWrap" hidden>
+      <label>Dạng tiêu đề đã lưu (tick dạng muốn dùng để chia)</label>
+      <div id="chFmtList" class="chlist" style="max-height:none"></div>
+      <div class="two">
+        <div>
+          <label for="chFmtIn">Thêm dạng mới (chép một dòng tiêu đề mẫu)</label>
+          <input type="text" id="chFmtIn" lang="zh" placeholder="二.  hoặc  楔子  hoặc  Chương 1" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="chFmtAdd" type="button" style="width:100%">Thêm</button>
+        </div>
+      </div>
+      <p class="hint">Danh sách lưu trong trình duyệt này. Bấm nút Quét bên dưới để xem mỗi dạng có bao nhiêu chương trong file này, rồi tick các dạng phù hợp.</p>
+      <div id="chScanReport" hidden>
+        <div id="chScanSummary" class="chcount" style="font-size:1.05rem" role="status"></div>
+        <div id="chUnknownBox" hidden>
+          <p class="hint">Dòng trông giống tiêu đề nhưng chưa thuộc dạng nào trong danh sách:</p>
+          <div id="chUnknown" class="chlist" style="max-height:none"></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button id="chScanSplit" class="primary" type="button" style="flex:1">Chia theo các dạng đã chọn</button>
+        </div>
+      </div>
+    </div>
+
+    <label for="chEnc">Mã hóa file (thường để Tự nhận)</label>
+    <select id="chEnc">
+      <option value="auto">Tự nhận (UTF-8 hoặc GBK)</option>
+      <option value="utf-8">UTF-8</option>
+      <option value="gb18030">GBK / GB18030 (chữ giản thể)</option>
+      <option value="big5">Big5 (chữ phồn thể)</option>
+    </select>
+
+
+    <div class="row" style="margin-top:14px">
+      <button id="chGo" class="primary" type="button" style="flex:1">Bắt đầu chia</button>
+    </div>
+    <p id="chNote" class="note" role="status" aria-live="polite"></p>
+
+    <div id="chResult" hidden>
+      <div id="chCount" class="chcount" role="status"></div>
+      <label for="chAuthor">Tác giả (không bắt buộc)</label>
+      <input type="text" id="chAuthor" autocomplete="off" spellcheck="false">
+      <p id="chBookInfo" class="hint"></p>
+      <div class="row" style="margin-top:12px">
+        <button id="chEpub" class="primary" type="button" style="flex:1">Tải thành sách .epub</button>
+      </div>
+      <details class="names">
+        <summary id="chNamesSum">Xem danh sách chương</summary>
+        <div id="chNames" class="chlist"></div>
+      </details>
+    </div>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  /* ===== Chia chương: các hàm thuần (không đụng DOM) ===== */
+  var NUMC = '[0-9０-９零〇一二三四五六七八九十百千万两壹贰叁肆伍陆柒捌玖拾佰仟]+';
+  var RE_CH = new RegExp('^第\\s*' + NUMC + '\\s*[章节節回话話]');
+  var RE_VOL = new RegExp('^第\\s*' + NUMC + '\\s*[卷部篇集]');
+  var RE_SPECIAL = /^(楔子|序章|序言|引子|前言|尾声|尾聲|后记|後記|终章|終章|大结局|番外)/;
+  var RE_LATIN = /^(chương|chuong|chapter)\s*\d+/i;
+  var PRESETS = {
+    zhang: new RegExp('^第\\s*' + NUMC + '\\s*章'),
+    jie: new RegExp('^第\\s*' + NUMC + '\\s*[节節]'),
+    hui: new RegExp('^第\\s*' + NUMC + '\\s*回'),
+    hua: new RegExp('^第\\s*' + NUMC + '\\s*[话話]'),
+    vi: RE_LATIN
+  };
+  PRESETS.common = PRESETS.zhang;
+
+  function trimLine(l) { return l.replace(/^[\s\u3000]+|[\s\u3000]+$/g, ''); }
+  function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function notSentence(s) { return s && s.length <= 50 && !/[。！？!?]$/.test(s); }
+
+  /* 1 = tiêu đề chương, 2 = tiêu đề quyển/tập, 0 = dòng thường */
+  function headingType(line) {
+    var s = trimLine(line);
+    if (!notSentence(s)) return 0;
+    if (RE_CH.test(s) || RE_SPECIAL.test(s) || RE_LATIN.test(s)) return 1;
+    if (RE_VOL.test(s)) return 2;
+    return 0;
+  }
+
+  /* Dựng mẫu nhận diện từ một dòng tiêu đề mẫu: "第1章 鸣人的天空", "二.", "Chương 1: abc"... */
+  function patternFromSample(sample) {
+    var s = trimLine(sample || '');
+    var m = new RegExp(NUMC).exec(s);
+    if (!m) return null;
+    var prefix = trimLine(s.slice(0, m.index));
+    var rest = s.slice(m.index + m[0].length);
+    var um = /^\s*([章节節回话話卷集部篇])/.exec(rest);
+    var unit = um ? um[1] : '';
+    var suffix = '';
+    if (!prefix && !unit) {                                   // kiểu "二." hoặc "3、"
+      var sm = /^\s*([.．、:：)）])/.exec(rest);
+      suffix = sm ? sm[1] : '';
+    }
+    if (!prefix && !unit && !suffix) return null;
+    return new RegExp('^\\s*' + escapeRe(prefix) + '\\s*' + NUMC +
+      (unit ? '\\s*' + escapeRe(unit) : '') + (suffix ? '\\s*' + escapeRe(suffix) + '(?![0-9０-９])' : ''), 'i');
+  }
+  /* Một "dạng tiêu đề": có số (第1章, 二., Chương 1) hoặc là từ khóa đầu dòng (楔子, 番外) */
+  function patternFromFormat(sample) {
+    var p = patternFromSample(sample);
+    if (p) return p;
+    var s = trimLine(sample || '');
+    if (!s || s.length > 12 || /[0-9０-９]/.test(s)) return null;
+    return new RegExp('^\\s*' + escapeRe(s), 'i');
+  }
+  /* Nhiều dòng mẫu -> nhiều mẫu nhận diện; dòng nào không dựng được thì bị bỏ qua */
+  function patternsFromSamples(text) {
+    var res = [], bad = 0;
+    (text || '').split(/\r?\n/).forEach(function (l) {
+      if (!trimLine(l)) return;
+      var re = patternFromFormat(l);
+      if (re) res.push(re); else bad++;
+    });
+    return { patterns: res, bad: bad };
+  }
+
+  function makeTest(kind, sample) {
+    if (kind === 'auto') return { test: headingType };
+    var res;
+    if (kind === 'sample' || kind === 'formats') {
+      var ps = patternsFromSamples(sample);
+      if (!ps.patterns.length) return { error: 'Cần ít nhất một dòng tiêu đề mẫu có số kèm chữ, ví dụ 第1章, 二. hoặc Chương 1.' };
+      res = ps.patterns;
+    } else if (PRESETS[kind]) {
+      res = [PRESETS[kind]];
+    } else {
+      return { error: 'Kiểu tiêu đề không hợp lệ.' };
+    }
+    return {
+      test: function (line) {
+        var s = trimLine(line);
+        if (!notSentence(s)) return 0;
+        for (var i = 0; i < res.length; i++) if (res[i].test(s)) return 1;
+        if (RE_VOL.test(s) && s.length <= 30) return 2;
+        return 0;
+      }
+    };
+  }
+
+  /* Trả về {chapters:[{title, lines[], pre?}], error} */
+  function splitText(text, kind, sample) {
+    var mt = makeTest(kind, sample);
+    if (mt.error) return { chapters: [], error: mt.error };
+    var lines = [];
+    text.replace(/\r\n?/g, '\n').split('\n').forEach(function (l) {
+      l = trimLine(l);
+      if (l) lines.push(l);
+    });
+    var out = [], curCh = null, carry = [], pre = [];
+    lines.forEach(function (l) {
+      var t = mt.test(l);
+      if (t === 1) {
+        curCh = { title: l, lines: carry.slice() };   // dòng "第X卷" gắn vào đầu chương kế tiếp
+        carry = [];
+        out.push(curCh);
+      } else if (t === 2) {
+        carry.push(l);
+      } else if (curCh) {
+        curCh.lines.push(l);
+      } else {
+        pre.push(l);
+      }
+    });
+    if (out.length && pre.join('').length >= 50) out.unshift({ title: '(Phần mở đầu)', lines: pre, pre: true });
+    return { chapters: out };
+  }
+
+  /* Quét file: mỗi dạng trong danh sách khớp bao nhiêu dòng; gom các dòng "nghi là tiêu đề" chưa có dạng nào */
+  function scanFormats(text, formats) {
+    var lines = [];
+    text.replace(/\r\n?/g, '\n').split('\n').forEach(function (l) { l = trimLine(l); if (l) lines.push(l); });
+    var infos = formats.map(function (f) { return { sample: f, re: patternFromFormat(f), idx: [], examples: [] }; });
+    var matchedAny = {};
+    lines.forEach(function (s, i) {
+      if (!notSentence(s)) return;
+      infos.forEach(function (info) {
+        if (info.re && info.re.test(s)) {
+          info.idx.push(i); matchedAny[i] = true;
+          if (info.examples.length < 2) info.examples.push(s);
+        }
+      });
+    });
+    var CAND = new RegExp('^(第\\s*' + NUMC + '\\s*[章节節回话話卷集部篇]|' + NUMC + '\\s*[.．、:：)）](?![0-9０-９])|(chương|chapter)\\s*\\d+)', 'i');
+    var NUMG = new RegExp(NUMC, 'g'), shapes = {};
+    lines.forEach(function (s, i) {
+      if (matchedAny[i] || s.length > 30 || !notSentence(s) || !CAND.test(s)) return;
+      var key = CAND.exec(s)[0].replace(/\s+/g, '').replace(NUMG, 'N');
+      if (!shapes[key]) shapes[key] = { key: key, count: 0, sample: s };
+      shapes[key].count++;
+    });
+    var unknown = Object.keys(shapes).map(function (k) { return shapes[k]; })
+      .filter(function (x) { return x.count >= 2; })
+      .sort(function (a, b) { return b.count - a.count; }).slice(0, 5);
+    return { totalLines: lines.length, infos: infos, unknown: unknown };
+  }
+
+
+  /* File không có tiêu đề: tìm lần lượt các đoạn mở đầu (4-5 chữ) và cắt chương tại đó */
+  function splitByOpenings(text, openingsText, tpl, startN) {
+    if (!tpl || tpl.indexOf('{n}') < 0) return { chapters: [], error: 'Mẫu tên cần có {n}, ví dụ 第{n}章.' };
+    var snippets = [];
+    (openingsText || '').split(/\r?\n/).forEach(function (l, idx) {
+      var c = l.replace(/[\s\u3000]+/g, '');
+      if (c) snippets.push({ c: c, shown: trimLine(l), line: idx + 1 });
+    });
+    if (!snippets.length) return { chapters: [], error: 'Hãy nhập đoạn mở đầu của từng chương, mỗi dòng một chương.' };
+
+    var norm = text.replace(/\r\n?/g, '\n');
+    var map = new Int32Array(norm.length), chars = [], k = 0;      // bản không khoảng trắng + bảng quy đổi vị trí
+    for (var i = 0; i < norm.length; i++) {
+      var ch = norm.charAt(i);
+      if (/[\s\u3000]/.test(ch)) continue;
+      chars.push(ch); map[k++] = i;
+    }
+    var compact = chars.join(''), starts = [], from = 0, warnings = [];
+    function atLineStart(p) {                       // vị trí gốc nằm đầu dòng (chỉ có khoảng trắng phía trước)
+      var o = map[p] - 1;
+      while (o >= 0 && norm.charAt(o) !== '\n') { if (!/[\s\u3000]/.test(norm.charAt(o))) return false; o--; }
+      return true;
+    }
+    for (var j = 0; j < snippets.length; j++) {
+      var pos = compact.indexOf(snippets[j].c, from), first = pos;
+      while (pos >= 0 && !atLineStart(pos)) pos = compact.indexOf(snippets[j].c, pos + 1);   // ưu tiên chỗ đầu dòng
+      if (pos < 0) pos = first;                                                              // không có thì lấy chỗ đầu tiên
+      if (pos < 0) {
+        return { chapters: [], error: 'Không tìm thấy đoạn mở đầu ở dòng ' + snippets[j].line + ' ("' + snippets[j].shown.slice(0, 20) + '") sau chương trước. Kiểm tra lại chữ hoặc thứ tự.' };
+      }
+      var others = 0, q = compact.indexOf(snippets[j].c, pos + 1);
+      while (q >= 0 && others < 20) {               // còn chỗ nào khác ở đầu dòng cũng khớp?
+        if (atLineStart(q)) others++;
+        q = compact.indexOf(snippets[j].c, q + 1);
+      }
+      if (others > 0) warnings.push({ line: snippets[j].line, others: others });
+      starts.push(map[pos]);
+      from = pos + snippets[j].c.length;
+    }
+    function toLines(str) {
+      var arr = [];
+      str.split('\n').forEach(function (l) { l = trimLine(l); if (l) arr.push(l); });
+      return arr;
+    }
+    var out = [];
+    for (var n = 0; n < starts.length; n++) {
+      var seg = norm.slice(starts[n], n + 1 < starts.length ? starts[n + 1] : norm.length);
+      out.push({ title: tpl.replace(/\{n\}/g, String(startN + n)), lines: toLines(seg) });
+    }
+    var pre = toLines(norm.slice(0, starts[0]));
+    if (pre.join('').length >= 50) out.unshift({ title: '(Phần mở đầu)', lines: pre, pre: true });
+    return { chapters: out, warnings: warnings };
+  }
+
+
+  /* Chia thủ công: bạn tự chèn dấu //// vào file ở chỗ ngắt chương.
+     Chữ cùng dòng sau dấu //// (nếu có) là tên chương; không có thì đặt theo mẫu tên. */
+  var RE_MARK = /\/{4,}/;
+  function splitByMarker(text, tpl, startN) {
+    if (!tpl || tpl.indexOf('{n}') < 0) return { chapters: [], error: 'Mẫu tên cần có {n}, ví dụ 第{n}章.' };
+    var segs = [], cur = { title: null, lines: [] }, markers = 0;
+    function push() { if (cur.lines.length || cur.title) segs.push(cur); }
+    text.replace(/\r\n?/g, '\n').split('\n').forEach(function (raw) {
+      if (!RE_MARK.test(raw)) { var l = trimLine(raw); if (l) cur.lines.push(l); return; }
+      var parts = raw.split(/\/{4,}/);
+      for (var k = 0; k < parts.length; k++) {
+        var p = trimLine(parts[k]);
+        if (k > 0) {
+          markers++; push(); cur = { title: null, lines: [] };
+          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && p && p.length <= 40) { cur.title = p; continue; }
+        }
+        if (p) cur.lines.push(p);
+      }
+    });
+    push();
+    if (!markers) return { chapters: [], error: 'Không thấy dấu //// nào trong file.' };
+    var out = segs.map(function (sg, i) {
+      return { title: sg.title || tpl.replace(/\{n\}/g, String(startN + i)), lines: sg.lines };
+    });
+    return { chapters: out, markers: markers };
+  }
+
+  /* Chia nhỏ file thành k phần gần bằng nhau, cắt ở ranh giới đoạn văn */
+  function splitIntoParts(text, k) {
+    k = parseInt(k, 10);
+    if (!k || k < 2) return { chapters: [], error: 'Hãy nhập số phần từ 2 trở lên.' };
+    var lines = [];
+    text.replace(/\r\n?/g, '\n').split('\n').forEach(function (l) { l = trimLine(l); if (l) lines.push(l); });
+    if (lines.length < k) return { chapters: [], error: 'File chỉ có ' + lines.length + ' dòng nên không chia được thành ' + k + ' phần.' };
+    var total = 0;
+    lines.forEach(function (l) { total += l.length + 1; });
+    var out = [], cur = [], cum = 0;
+    for (var i = 0; i < lines.length; i++) {
+      cur.push(lines[i]); cum += lines[i].length + 1;
+      var linesLeft = lines.length - 1 - i, partsLeft = k - out.length - 1;
+      if (out.length < k - 1 && ((cum >= total * (out.length + 1) / k && linesLeft >= partsLeft) || linesLeft === partsLeft)) {
+        out.push({ title: 'Phần ' + (out.length + 1), lines: cur, noTitle: true }); cur = [];
+      }
+    }
+    if (cur.length) out.push({ title: 'Phần ' + (out.length + 1), lines: cur, noTitle: true });
+    return { chapters: out };
+  }
+
+
+  /* ===== Tạo EPUB từ các chương đã chia ===== */
+  function xmlText(s) {
+    return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function xmlAttr(s) { return xmlText(s).replace(/"/g, '&quot;'); }
+
+  /* chapters: [{title, lines[]}]; o: {title, author, lang, uuid, modified} -> [{name, data}] (mimetype đứng đầu) */
+  function buildEpubFiles(chapters, o) {
+    var enc = new TextEncoder(), files = [];
+    function add(name, str) { files.push({ name: name, data: enc.encode(str) }); }
+    var lang = o.lang || 'zh', title = o.title || 'Truyện', author = (o.author || '').trim();
+    var id = 'urn:uuid:' + o.uuid, X = '<?xml version="1.0" encoding="UTF-8"?>\n';
+
+    add('mimetype', 'application/epub+zip');
+    add('META-INF/container.xml', X +
+      '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n' +
+      '  <rootfiles>\n    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>\n');
+    add('OEBPS/style.css',
+      'body{line-height:1.7;margin:0 .6em}\n' +
+      'h1{font-size:1.4em;text-align:center;margin:1.2em 0 1em}\n' +
+      'p{margin:.6em 0;text-indent:2em;text-align:justify}\n');
+
+    var w = Math.max(4, String(chapters.length).length), manifest = [], spine = [], nav = [], ncx = [];
+    chapters.forEach(function (ch, i) {
+      var n = i + 1, fn = 'chap' + String(n).padStart(w, '0') + '.xhtml', t = xmlText(ch.title);
+      var paras = ch.lines.map(function (l) { return '  <p>' + xmlText(l) + '</p>'; }).join('\n');
+      add('OEBPS/' + fn, X + '<!DOCTYPE html>\n' +
+        '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="' + lang + '" lang="' + lang + '">\n' +
+        '<head>\n  <meta charset="utf-8"/>\n  <title>' + t + '</title>\n  <link rel="stylesheet" type="text/css" href="style.css"/>\n</head>\n' +
+        '<body>\n  <h1>' + t + '</h1>\n' + paras + '\n</body>\n</html>\n');
+      manifest.push('    <item id="c' + n + '" href="' + fn + '" media-type="application/xhtml+xml"/>');
+      spine.push('    <itemref idref="c' + n + '"/>');
+      nav.push('      <li><a href="' + fn + '">' + t + '</a></li>');
+      ncx.push('    <navPoint id="n' + n + '" playOrder="' + n + '"><navLabel><text>' + t + '</text></navLabel><content src="' + fn + '"/></navPoint>');
+    });
+
+    add('OEBPS/nav.xhtml', X + '<!DOCTYPE html>\n' +
+      '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="' + lang + '" lang="' + lang + '">\n' +
+      '<head>\n  <meta charset="utf-8"/>\n  <title>Mục lục</title>\n</head>\n<body>\n  <nav epub:type="toc" id="toc">\n    <h1>Mục lục</h1>\n    <ol>\n' +
+      nav.join('\n') + '\n    </ol>\n  </nav>\n</body>\n</html>\n');
+    add('OEBPS/toc.ncx', X +
+      '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n  <head>\n' +
+      '    <meta name="dtb:uid" content="' + xmlAttr(id) + '"/>\n    <meta name="dtb:depth" content="1"/>\n' +
+      '    <meta name="dtb:totalPageCount" content="0"/>\n    <meta name="dtb:maxPageNumber" content="0"/>\n  </head>\n' +
+      '  <docTitle><text>' + xmlText(title) + '</text></docTitle>\n  <navMap>\n' + ncx.join('\n') + '\n  </navMap>\n</ncx>\n');
+    add('OEBPS/content.opf', X +
+      '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid" xml:lang="' + lang + '">\n' +
+      '  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n' +
+      '    <dc:identifier id="bookid">' + xmlText(id) + '</dc:identifier>\n' +
+      '    <dc:title>' + xmlText(title) + '</dc:title>\n' +
+      '    <dc:language>' + lang + '</dc:language>\n' +
+      (author ? '    <dc:creator>' + xmlText(author) + '</dc:creator>\n' : '') +
+      '    <meta property="dcterms:modified">' + o.modified + '</meta>\n  </metadata>\n  <manifest>\n' +
+      '    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>\n' +
+      '    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n' +
+      '    <item id="css" href="style.css" media-type="text/css"/>\n' + manifest.join('\n') + '\n  </manifest>\n' +
+      '  <spine toc="ncx">\n' + spine.join('\n') + '\n  </spine>\n</package>\n');
+    return files;
+  }
+  function newUuid() {
+    try { if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+    });
+  }
+
+  /* Tên file = đúng tiêu đề trong file; chỉ đổi ký tự hệ điều hành cấm sang ký tự toàn chiều giống hệt */
+  var FULLW = { '\\': '＼', '/': '／', ':': '：', '*': '＊', '?': '？', '"': '＂', '<': '＜', '>': '＞', '|': '｜' };
+  function safeName(t) {
+    return t.replace(/[\\\/:*?"<>|]/g, function (c) { return FULLW[c]; })
+            .replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 120).replace(/[. ]+$/, '') || 'chuong';
+  }
+  function buildFileNames(chapters, numbered) {
+    var w = Math.max(3, String(chapters.length).length), used = {}, names = [];
+    chapters.forEach(function (ch, i) {
+      var base = (numbered ? String(i + 1).padStart(w, '0') + '_' : '') + safeName(ch.title);
+      var n = base, k = 2;
+      while (used[n.toLowerCase()]) { n = base + ' (' + k + ')'; k++; }   // trùng tên thì thêm (2), (3)...
+      used[n.toLowerCase()] = 1;
+      names.push(n + '.txt');
+    });
+    return names;
+  }
+  function chapterText(ch, withTitle) {
+    var body = ch.lines.join('\n');
+    return (withTitle && !ch.pre && !ch.noTitle) ? ch.title + '\n\n' + body : body;
+  }
+
+  function decodeText(buf, enc) {
+    var s;
+    if (enc === 'auto') {
+      try { s = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+      catch (e) { s = new TextDecoder('gb18030').decode(buf); }
+    } else {
+      s = new TextDecoder(enc).decode(buf);
+    }
+    return s.replace(/^\uFEFF/, '');
+  }
+
+  /* ZIP đơn giản (không nén), tên file UTF-8 */
+  var CRC_TABLE = null;
+  function crc32(u8) {
+    if (!CRC_TABLE) {
+      CRC_TABLE = new Uint32Array(256);
+      for (var i = 0; i < 256; i++) {
+        var c = i;
+        for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        CRC_TABLE[i] = c >>> 0;
+      }
+    }
+    var crc = 0xFFFFFFFF;
+    for (var j = 0; j < u8.length; j++) crc = CRC_TABLE[(crc ^ u8[j]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function dosTime(d) {
+    return [((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF,
+            (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF];
+  }
+  function makeZipParts(files) {            // files: [{name, data(Uint8Array), time(Date, tuỳ chọn)}]
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0, centralSize = 0;
+    files.forEach(function (f) {
+      var nb = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      var dt = f.time ? dosTime(f.time) : [0, 0x21];
+      var lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+      lh.setUint16(8, 0, true); lh.setUint16(10, dt[0], true); lh.setUint16(12, dt[1], true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+      lh.setUint16(26, nb.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), nb, f.data);
+      var ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true); ch.setUint16(12, dt[0], true); ch.setUint16(14, dt[1], true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+      ch.setUint16(28, nb.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+      ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), nb);
+      centralSize += 46 + nb.length;
+      offset += 30 + nb.length + size;
+    });
+    var end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, centralSize, true); end.setUint32(16, offset, true);
+    return parts.concat(central, [new Uint8Array(end.buffer)]);
+  }
+
+  /* ===== Chia chương: giao diện ===== */
+  var $ = function (id) { return document.getElementById(id); };
+  var fileBuf = null, fileName = '', chapters = [], names = [];
+  function bookName() { return fileName.replace(/\.txt$/i, '').trim() || 'Truyện'; }
+  var E = {
+    file: $('chFile'), info: $('chFileInfo'), enc: $('chEnc'), kind: $('chKind'),
+    sampleWrap: $('chSampleWrap'), sample: $('chSample'), openWrap: $('chOpenWrap'), open: $('chOpen'), nameWrap: $('chNameWrap'),
+    manualWrap: $('chManualWrap'), partsWrap: $('chPartsWrap'), parts: $('chParts'),
+    tpl: $('chTpl'), start: $('chStart'),
+    go: $('chGo'), note: $('chNote'), result: $('chResult'), count: $('chCount'),
+    names: $('chNames'), namesSum: $('chNamesSum'),
+    scanWrap: $('chScanWrap'), fmtList: $('chFmtList'), fmtIn: $('chFmtIn'), fmtAdd: $('chFmtAdd'),
+    report: $('chScanReport'), summary: $('chScanSummary'), unBox: $('chUnknownBox'), unList: $('chUnknown'),
+    scanSplit: $('chScanSplit'), bookInfo: $('chBookInfo'), author: $('chAuthor'), epub: $('chEpub')
+  };
+
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toast._h); toast._h = setTimeout(function () { t.classList.remove('on'); }, 1600);
+  }
+  function setNote(msg, warn) { E.note.textContent = msg || ''; E.note.className = 'note' + (warn ? ' warn' : ''); }
+
+  function syncKind() {
+    var k = E.kind.value;
+    E.sampleWrap.hidden = (k !== 'sample');
+    E.openWrap.hidden = (k !== 'opening');
+    E.manualWrap.hidden = (k !== 'manual');
+    E.nameWrap.hidden = (k !== 'opening' && k !== 'manual');
+    E.partsWrap.hidden = (k !== 'parts');
+    E.scanWrap.hidden = (k !== 'scan');
+    E.go.textContent = (k === 'scan') ? 'Quét các dạng tiêu đề trong file' : 'Bắt đầu chia';
+    if (k === 'scan') renderFormats();
+  }
+  E.kind.addEventListener('change', syncKind);
+
+  E.file.addEventListener('change', function () {
+    var f = E.file.files && E.file.files[0];
+    if (!f) return;
+    f.arrayBuffer().then(function (buf) {
+      fileBuf = buf; fileName = f.name;
+      E.info.textContent = 'Đã chọn: ' + f.name + ' (' + Math.round(f.size / 1024).toLocaleString('vi-VN') + ' KB)';
+      E.result.hidden = true; E.report.hidden = true; lastScan = null; setNote('');
+    }, function () { setNote('Không mở được file.', true); });
+  });
+
+  function renderNames() {
+    var box = E.names; box.innerHTML = '';
+    var w = Math.max(3, String(names.length).length);
+    names.forEach(function (n, i) {
+      var row = document.createElement('div'); row.className = 'chname';
+      var a = document.createElement('span'); a.className = 'n'; a.textContent = String(i + 1).padStart(w, '0');
+      var b = document.createElement('span'); b.className = 't'; b.textContent = n;
+      row.appendChild(a); row.appendChild(b); box.appendChild(row);
+    });
+    E.namesSum.textContent = 'Xem danh sách chương (' + names.length + ')';
+  }
+
+  function showResult(r) {
+    if (r.error) { setNote(r.error, true); E.result.hidden = true; return; }
+    if (!r.chapters.length) {
+      setNote('Không thấy tiêu đề chương nào theo kiểu đã chọn. Thử "Theo định dạng khác", "Theo định dạng danh sách", "Theo định dạng không tiêu đề" hoặc "Theo định dạng thủ công".', true);
+      E.result.hidden = true; return;
+    }
+    chapters = r.chapters;
+    names = chapters.map(function (c) { return c.title; });
+    var n = chapters.filter(function (c) { return !c.pre; }).length;
+    var hasPre = chapters.length > n;
+    E.count.textContent = (E.kind.value === 'parts')
+      ? 'Đã chia file thành ' + n + ' phần'
+      : 'Đã chia được ' + n + ' chương' + (hasPre ? ' (và 1 phần mở đầu)' : '');
+    renderNames();
+    E.result.hidden = false; setNote('');
+    E.bookInfo.textContent = 'Tên sách: ' + bookName() + ' (lấy theo tên file đã chọn)';
+    if (r.warnings && r.warnings.length) {
+      var w = r.warnings.slice(0, 4).map(function (x) { return 'dòng ' + x.line; }).join(', ');
+      setNote('Lưu ý: đoạn mở đầu ở ' + w + (r.warnings.length > 4 ? ' và ' + (r.warnings.length - 4) + ' dòng khác' : '') +
+              ' còn xuất hiện chỗ khác đầu dòng trong file, trang đã chọn chỗ đầu tiên. Nếu chương bị cắt sai, hãy nhập đoạn dài hơn (8 đến 10 chữ).', true);
+    }
+  }
+
+  function readText() {
+    if (!fileBuf) { setNote('Hãy chọn file .txt trước.', true); return null; }
+    try { return decodeText(fileBuf, E.enc.value); }
+    catch (e) { setNote('Không đọc được file này, thử đổi Mã hóa file.', true); return null; }
+  }
+
+  /* ----- Danh sách dạng tiêu đề đã lưu ----- */
+  var FMT_KEY = 'chiachuong_formats_v1', memFmt = null;
+  var SEEDS = ['第1章', '第1节', '第1回', '第1话', 'Chương 1', 'Chapter 1', '第1卷', '楔子', '番外'];
+  var lastScan = null, checkedSet = {};
+  function loadFormats() {
+    try { var v = localStorage.getItem(FMT_KEY); if (v) { var a = JSON.parse(v); if (Array.isArray(a)) return a; } } catch (e) {}
+    return memFmt ? memFmt.slice() : SEEDS.slice();
+  }
+  function saveFormats(a) { memFmt = a.slice(); try { localStorage.setItem(FMT_KEY, JSON.stringify(a)); } catch (e) {} }
+
+  function short(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
+
+  function updateUnion() {
+    if (!lastScan) return;
+    var seen = {}, n = 0, used = 0;
+    Object.keys(checkedSet).forEach(function (f) {
+      var info = lastScan.byFormat[f];
+      if (!checkedSet[f] || !info) return;
+      used++;
+      info.idx.forEach(function (i) { if (!seen[i]) { seen[i] = 1; n++; } });
+    });
+    E.summary.textContent = 'Đã quét ' + lastScan.totalLines.toLocaleString('vi-VN') + ' dòng. Có ' + lastScan.found + '/' + lastScan.total +
+      ' dạng xuất hiện trong file. Đang chọn ' + used + ' dạng, khoảng ' + n + ' chương.';
+  }
+
+  function renderFormats() {
+    var list = loadFormats(), box = E.fmtList; box.innerHTML = '';
+    if (!list.length) {
+      var e = document.createElement('div'); e.className = 'chname';
+      e.textContent = 'Danh sách trống. Hãy thêm một dòng tiêu đề mẫu bên dưới.'; box.appendChild(e);
+    }
+    list.forEach(function (f) {
+      var info = lastScan ? lastScan.byFormat[f] : null;
+      var row = document.createElement('div'); row.className = 'fmtrow';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!checkedSet[f];
+      cb.setAttribute('aria-label', 'Dùng dạng ' + f);
+      cb.addEventListener('change', function () { checkedSet[f] = cb.checked; updateUnion(); });
+      var m = document.createElement('div'); m.className = 'm';
+      var nm = document.createElement('span'); nm.className = 's'; nm.textContent = f;
+      var ex = document.createElement('span'); ex.className = 'e';
+      ex.textContent = (info && info.examples.length) ? 'Ví dụ: ' + info.examples.map(function (x) { return short(x, 24); }).join(' · ') : '';
+      m.appendChild(nm); m.appendChild(ex);
+      var cnt = document.createElement('span'); cnt.className = 'c';
+      cnt.textContent = info ? (info.idx.length ? info.idx.length + ' chương' : 'không có') : '';
+      var del = document.createElement('button'); del.type = 'button'; del.textContent = 'Xóa';
+      del.setAttribute('aria-label', 'Xóa dạng ' + f);
+      del.addEventListener('click', function () {
+        saveFormats(loadFormats().filter(function (x) { return x !== f; }));
+        delete checkedSet[f]; renderFormats(); updateUnion();
+      });
+      row.appendChild(cb); row.appendChild(m); row.appendChild(cnt); row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  function addFormat(v) {
+    v = (v || '').trim();
+    if (!v) { setNote('Hãy chép một dòng tiêu đề mẫu trước.', true); return false; }
+    if (v.length > 60 || !patternFromFormat(v)) {
+      setNote('Dòng mẫu cần có số kèm chữ (第1章, 二., Chương 1) hoặc là từ khóa ngắn như 楔子.', true); return false;
+    }
+    var list = loadFormats();
+    if (list.indexOf(v) >= 0) { setNote('Dạng này đã có trong danh sách.', true); return false; }
+    list.push(v); saveFormats(list); renderFormats(); return true;
+  }
+  E.fmtAdd.addEventListener('click', function () {
+    if (addFormat(E.fmtIn.value)) { E.fmtIn.value = ''; setNote('Đã thêm. Bấm "Quét" lại để xem số chương của dạng mới.'); }
+  });
+  E.fmtIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); E.fmtAdd.click(); } });
+
+  function renderUnknown() {
+    var box = E.unList; box.innerHTML = '';
+    var u = lastScan ? lastScan.unknown : [];
+    E.unBox.hidden = !u.length;
+    u.forEach(function (x) {
+      var row = document.createElement('div'); row.className = 'fmtrow';
+      var m = document.createElement('div'); m.className = 'm';
+      var nm = document.createElement('span'); nm.className = 's'; nm.textContent = short(x.sample, 30);
+      var ex = document.createElement('span'); ex.className = 'e'; ex.textContent = x.count + ' dòng cùng dạng';
+      m.appendChild(nm); m.appendChild(ex);
+      var add = document.createElement('button'); add.type = 'button'; add.textContent = 'Thêm dạng này';
+      add.addEventListener('click', function () {
+        if (addFormat(x.sample)) setNote('Đã thêm "' + short(x.sample, 20) + '". Bấm "Quét" lại để xem số chương.');
+      });
+      row.appendChild(m); row.appendChild(add); box.appendChild(row);
+    });
+  }
+
+  function doScan(text) {
+    var list = loadFormats();
+    if (!list.length) { setNote('Danh sách dạng tiêu đề đang trống, hãy thêm ít nhất một dạng.', true); return; }
+    var r = scanFormats(text, list), by = {};
+    r.infos.forEach(function (i) { by[i.sample] = i; });
+    lastScan = { byFormat: by, totalLines: r.totalLines, unknown: r.unknown, total: list.length,
+                 found: r.infos.filter(function (i) { return i.idx.length > 0; }).length };
+    checkedSet = {};
+    list.forEach(function (f) {                       // mặc định tick dạng có trong file, trừ dạng 卷/集/部/篇 (thường là quyển)
+      var i = by[f]; checkedSet[f] = !!(i && i.idx.length && !/[卷集部篇]/.test(f));
+    });
+    renderFormats(); renderUnknown(); updateUnion();
+    E.report.hidden = false; E.result.hidden = true; setNote('');
+  }
+  E.scanSplit.addEventListener('click', function () {
+    var text = readText(); if (text === null) return;
+    var chosen = loadFormats().filter(function (f) { return checkedSet[f]; });
+    if (!chosen.length) { setNote('Hãy tick ít nhất một dạng để chia.', true); return; }
+    showResult(splitText(text, 'formats', chosen.join('\n')));
+  });
+
+  E.go.addEventListener('click', function () {
+    var text = readText(); if (text === null) return;
+    if (E.kind.value === 'scan') { doScan(text); return; }
+    var r, k = E.kind.value;
+    var sn = parseInt(E.start.value, 10);
+    if (isNaN(sn)) sn = 1;
+    if (k === 'opening') {
+      r = splitByOpenings(text, E.open.value, E.tpl.value, sn);
+    } else if (k === 'manual') {
+      r = splitByMarker(text, E.tpl.value, sn);
+    } else if (k === 'parts') {
+      r = splitIntoParts(text, E.parts.value);
+    } else {
+      r = splitText(text, k, E.sample.value);          // 'common' hoặc 'sample'
+    }
+    showResult(r);
+  });
+
+  E.epub.addEventListener('click', function () {
+    if (!chapters.length) return;
+    var sample = chapters.slice(0, 5).map(function (c) { return c.lines.join(''); }).join('').slice(0, 3000);
+    var title = bookName();
+    var files = buildEpubFiles(chapters, {
+      title: title, author: E.author.value, uuid: newUuid(),
+      lang: /[\u4e00-\u9fff]/.test(sample) ? 'zh' : 'vi',
+      modified: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
+    });
+    var blob = new Blob(makeZipParts(files), { type: 'application/epub+zip' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = (safeName(title) || 'truyen') + '.epub';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    toast('Đang tải file epub');
+  });
+
+})();
+</script>
+</body>
+</html>

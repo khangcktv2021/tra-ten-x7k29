@@ -78,6 +78,11 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 .fmtrow .e{display:block;font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
 .fmtrow .c{color:var(--muted);font-size:.85rem;white-space:nowrap;padding-top:2px}
 .fmtrow button{min-height:36px;padding:4px 10px;font-size:.9rem}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;background:var(--bg)}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+.drop-t{font-weight:600;margin:0 0 2px}
+.drop input[type=file]{padding:0}
+.fmtrow .c.bad{color:var(--warn)}
 </style>
 </head>
 <body>
@@ -88,13 +93,21 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     <a href="tao-epub.html" aria-current="page">Tạo EPUB</a>
   </nav>
   <h1>Tạo EPUB từ file zip</h1>
-  <p class="sub">Chọn file zip các chương, trang ghép lại thành một cuốn sách .epub có mục lục.</p>
+  <p class="sub">Kéo thả một hoặc nhiều file zip các chương, trang ghép mỗi file thành một cuốn sách .epub có mục lục.</p>
 
   <section aria-labelledby="s1">
     <h2 id="s1">Zip các chương thành sách epub</h2>
-    <label for="zFile">File zip các chương (mỗi chương một file .txt)</label>
-    <input type="file" id="zFile" accept=".zip,application/zip">
+    <label for="zFile">File zip các chương (làm nhiều file cùng lúc cũng được)</label>
+    <div id="zDrop" class="drop">
+      <p class="drop-t">Kéo file zip thả vào đây</p>
+      <p class="hint" style="margin:0 0 8px">hoặc chọn tệp bên dưới (chọn được nhiều file một lúc)</p>
+      <input type="file" id="zFile" accept=".zip,application/zip" multiple>
+    </div>
     <p id="zInfo" class="hint"></p>
+    <div id="zList" class="chlist" style="max-height:none" hidden></div>
+    <div class="row" style="margin-top:8px">
+      <button id="zClear" type="button" hidden>Xóa hết danh sách</button>
+    </div>
 
     <label for="zOrder">Thứ tự chương</label>
     <select id="zOrder">
@@ -112,9 +125,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     <label class="chk"><input type="checkbox" id="zStrip" checked> Bỏ số thứ tự ở đầu tên file (001_…)</label>
     <label class="chk"><input type="checkbox" id="zDup" checked> Bỏ dòng đầu nội dung nếu trùng tên chương</label>
 
-    <label for="zAuthor">Tác giả (không bắt buộc)</label>
-    <input type="text" id="zAuthor" autocomplete="off" spellcheck="false">
-    <p id="zBookInfo" class="hint"></p>
+    <p class="hint">Tên sách của mỗi epub lấy theo tên file zip tương ứng.</p>
 
     <div class="row" style="margin-top:14px">
       <button id="zGo" class="primary" type="button" style="flex:1">Tạo EPUB</button>
@@ -123,10 +134,10 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
     <div id="zResult" hidden>
       <div id="zCount" class="chcount" role="status"></div>
-      <details class="names">
-        <summary id="zNamesSum">Xem danh sách chương</summary>
-        <div id="zNames" class="chlist"></div>
-      </details>
+      <div id="zResList" class="chlist" style="max-height:none"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="zAll" class="primary" type="button" style="flex:1" hidden>Tải tất cả (một file zip)</button>
+      </div>
     </div>
   </section>
 </main>
@@ -331,21 +342,25 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     return !/^\./.test(base) && /\.txt$/i.test(base);
   }
 
-  /* ===== Giao diện: zip các chương -> epub ===== */
+  /* ===== Giao diện: nhiều file zip các chương -> nhiều file epub ===== */
   var $ = function (id) { return document.getElementById(id); };
-  var zipBuf = null, zipName = '', chapterEntries = [];
+  var files = [];                       // [{name, size, buf, entries, error}]
+  var results = [], bundleBlob = null;  // kết quả lần tạo gần nhất
   var E = {
-    file: $('zFile'), info: $('zInfo'), order: $('zOrder'), titleFrom: $('zTitleFrom'), strip: $('zStrip'), dup: $('zDup'),
-    bookInfo: $('zBookInfo'), author: $('zAuthor'), go: $('zGo'), note: $('zNote'),
-    result: $('zResult'), count: $('zCount'), names: $('zNames'), namesSum: $('zNamesSum')
+    drop: $('zDrop'), file: $('zFile'), info: $('zInfo'), list: $('zList'), clear: $('zClear'),
+    order: $('zOrder'), titleFrom: $('zTitleFrom'), strip: $('zStrip'), dup: $('zDup'),
+    go: $('zGo'), note: $('zNote'), result: $('zResult'), count: $('zCount'), resList: $('zResList'), all: $('zAll')
   };
   function toast(msg) {
     var t = $('toast'); t.textContent = msg; t.classList.add('on');
-    clearTimeout(toast._h); toast._h = setTimeout(function () { t.classList.remove('on'); }, 1600);
+    clearTimeout(toast._h); toast._h = setTimeout(function () { t.classList.remove('on'); }, 1800);
   }
   function setNote(msg, warn) { E.note.textContent = msg || ''; E.note.className = 'note' + (warn ? ' warn' : ''); }
-  function bookName() { return zipName.replace(/\.zip$/i, '').trim() || 'Truyện'; }
   function baseName(n) { return n.replace(/^.*[\\\/]/, ''); }
+  function zipBase(n) { return n.replace(/\.zip$/i, '').trim() || 'Truyện'; }
+  function slice(u8) { return u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength); }
+  function short(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
+  function kb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
 
   function explain(err) {
     var m = err && err.message;
@@ -354,65 +369,154 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     if (m === 'encrypted') return 'File zip có đặt mật khẩu, trang không đọc được.';
     if (m === 'nodeflate') return 'Trình duyệt này chưa giải nén được kiểu nén của file zip. Hãy dùng Chrome, Edge hoặc Firefox bản mới.';
     if (m === 'method') return 'File zip dùng kiểu nén mà trang chưa hỗ trợ.';
-    return 'Có lỗi khi đọc file zip, thử lại hoặc chọn file khác.';
+    return 'Có lỗi khi đọc file, thử lại hoặc chọn file khác.';
   }
 
-  E.file.addEventListener('change', function () {
-    var f = E.file.files && E.file.files[0];
-    if (!f) return;
-    f.arrayBuffer().then(function (buf) {
-      var list;
-      try { list = readZipList(buf); } catch (e) { zipBuf = null; chapterEntries = []; E.info.textContent = ''; setNote(explain(e), true); return; }
-      zipBuf = buf; zipName = f.name;
-      chapterEntries = list.filter(function (e) { return isChapterFile(e.name); });
-      var skipped = list.filter(function (e) { return !/\/$/.test(e.name); }).length - chapterEntries.length;
-      E.info.textContent = 'Đã mở: ' + f.name + ' (' + chapterEntries.length + ' file .txt' + (skipped > 0 ? ', bỏ qua ' + skipped + ' file khác' : '') + ')';
-      E.bookInfo.textContent = 'Tên sách: ' + bookName() + ' (lấy theo tên file zip đã chọn)';
-      E.result.hidden = true;
-      setNote(chapterEntries.length ? '' : 'Không thấy file .txt nào trong file zip này.', !chapterEntries.length);
-    }, function () { setNote('Không mở được file.', true); });
-  });
+  function download(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
 
-  function slice(u8) { return u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength); }
+  function resetResult() { results = []; bundleBlob = null; E.result.hidden = true; }
+
+  /* ----- danh sách file đã thêm ----- */
+  function renderList() {
+    var box = E.list; box.innerHTML = '';
+    E.list.hidden = !files.length; E.clear.hidden = !files.length;
+    var usable = files.filter(function (f) { return !f.error; }).length;
+    E.info.textContent = files.length ? 'Đã thêm ' + files.length + ' file zip (' + usable + ' file dùng được).' : '';
+    files.forEach(function (f, i) {
+      var row = document.createElement('div'); row.className = 'fmtrow';
+      var m = document.createElement('div'); m.className = 'm';
+      var nm = document.createElement('span'); nm.className = 's'; nm.textContent = f.name;
+      var ex = document.createElement('span'); ex.className = 'e';
+      ex.textContent = f.error ? f.error : (f.entries.length + ' file .txt · ' + kb(f.size));
+      m.appendChild(nm); m.appendChild(ex);
+      var st = document.createElement('span'); st.className = 'c' + (f.error ? ' bad' : ''); st.textContent = f.error ? 'Lỗi' : 'Sẵn sàng';
+      var del = document.createElement('button'); del.type = 'button'; del.textContent = 'Bỏ';
+      del.setAttribute('aria-label', 'Bỏ file ' + f.name);
+      del.addEventListener('click', function () { files.splice(i, 1); renderList(); resetResult(); setNote(''); });
+      row.appendChild(m); row.appendChild(st); row.appendChild(del); box.appendChild(row);
+    });
+  }
+
+  async function addFiles(fl) {
+    var arr = Array.prototype.slice.call(fl || []), dup = 0;
+    if (!arr.length) return;
+    for (var i = 0; i < arr.length; i++) {
+      var f = arr[i];
+      if (files.some(function (x) { return x.name === f.name && x.size === f.size; })) { dup++; continue; }
+      var item = { name: f.name, size: f.size, buf: null, entries: [], error: '' };
+      try {
+        var buf = await f.arrayBuffer(), list = readZipList(buf);
+        item.buf = buf;
+        item.entries = list.filter(function (e) { return isChapterFile(e.name); });
+        if (!item.entries.length) item.error = 'Không thấy file .txt nào trong zip này.';
+      } catch (err) { item.error = explain(err); }
+      files.push(item);
+    }
+    renderList(); resetResult();
+    setNote(dup ? 'Bỏ qua ' + dup + ' file đã có trong danh sách.' : '');
+  }
+
+  E.file.addEventListener('change', function () { var fl = E.file.files; addFiles(fl).then(function () { try { E.file.value = ''; } catch (e) {} }); });
+  E.clear.addEventListener('click', function () { files = []; renderList(); resetResult(); setNote(''); });
+
+  /* ----- kéo thả ----- */
+  ['dragenter', 'dragover'].forEach(function (t) {
+    E.drop.addEventListener(t, function (e) { e.preventDefault(); E.drop.classList.add('over'); });
+  });
+  ['dragleave', 'dragend'].forEach(function (t) {
+    E.drop.addEventListener(t, function () { E.drop.classList.remove('over'); });
+  });
+  E.drop.addEventListener('drop', function (e) {
+    e.preventDefault(); E.drop.classList.remove('over');
+    addFiles(e.dataTransfer && e.dataTransfer.files);
+  });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });   // thả trượt ra ngoài khung thì không bị mở file
+  window.addEventListener('drop', function (e) { e.preventDefault(); });
+
+  /* ----- tạo epub cho từng zip ----- */
+  async function buildOne(item) {
+    var items = [];
+    for (var i = 0; i < item.entries.length; i++) {
+      var e = item.entries[i], data = await readZipEntry(item.buf, e);
+      items.push({ name: e.name, text: decodeText(slice(data), 'auto') });
+    }
+    if (E.order.value === 'name') {
+      items.sort(function (a, b) { return baseName(a.name).localeCompare(baseName(b.name), undefined, { numeric: true }); });
+    }
+    var chapters = makeChaptersFromTexts(items, { strip: E.strip.checked, titleFrom: E.titleFrom.value, dropDup: E.dup.checked });
+    var sample = chapters.slice(0, 5).map(function (c) { return c.lines.join(''); }).join('').slice(0, 3000);
+    var epub = buildEpubFiles(chapters, {
+      title: zipBase(item.name), author: '', uuid: newUuid(),
+      lang: /[\u4e00-\u9fff]/.test(sample) ? 'zh' : 'vi',
+      modified: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
+    });
+    return { chapters: chapters, blob: new Blob(makeZipParts(epub), { type: 'application/epub+zip' }) };
+  }
+
+  function uniqueName(base, used) {
+    var n = base, k = 2;
+    while (used[n.toLowerCase()]) { n = base + ' (' + k + ')'; k++; }
+    used[n.toLowerCase()] = 1; return n;
+  }
+
+  function renderResults() {
+    var ok = results.filter(function (r) { return !r.error; }).length, bad = results.length - ok;
+    E.count.textContent = 'Đã tạo ' + ok + ' sách epub' + (bad ? ' (' + bad + ' file lỗi)' : '');
+    E.resList.innerHTML = '';
+    results.forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'fmtrow';
+      var m = document.createElement('div'); m.className = 'm';
+      var nm = document.createElement('span'); nm.className = 's'; nm.textContent = r.error ? r.zipName : r.fileName;
+      var ex = document.createElement('span'); ex.className = 'e';
+      ex.textContent = r.error ? r.error : (r.chapters.length + ' chương · đầu: ' + short(r.chapters[0].title, 18) + ' · cuối: ' + short(r.chapters[r.chapters.length - 1].title, 18));
+      m.appendChild(nm); m.appendChild(ex); row.appendChild(m);
+      if (!r.error) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Tải';
+        b.setAttribute('aria-label', 'Tải ' + r.fileName);
+        b.addEventListener('click', function () { download(r.blob, r.fileName); });
+        row.appendChild(b);
+      }
+      E.resList.appendChild(row);
+    });
+    E.all.hidden = ok < 2;
+    E.result.hidden = false;
+  }
 
   E.go.addEventListener('click', function () {
-    if (!zipBuf || !chapterEntries.length) { setNote('Hãy chọn file zip có chứa các file .txt trước.', true); return; }
-    E.go.disabled = true; setNote('Đang đọc các chương...');
+    var usable = files.filter(function (f) { return !f.error; });
+    if (!usable.length) { setNote('Hãy thêm ít nhất một file zip dùng được (kéo thả hoặc bấm chọn tệp).', true); return; }
+    E.go.disabled = true; resetResult();
     (async function () {
       try {
-        var items = [];
-        for (var i = 0; i < chapterEntries.length; i++) {
-          var e = chapterEntries[i], data = await readZipEntry(zipBuf, e);
-          items.push({ name: e.name, text: decodeText(slice(data), 'auto') });
+        var used = {};
+        for (var i = 0; i < usable.length; i++) {
+          var f = usable[i];
+          setNote('Đang làm ' + (i + 1) + '/' + usable.length + ': ' + f.name + '...');
+          try {
+            var r = await buildOne(f);
+            results.push({ zipName: f.name, fileName: uniqueName(zipBase(f.name), used) + '.epub', chapters: r.chapters, blob: r.blob });
+          } catch (err) { results.push({ zipName: f.name, error: explain(err) }); }
         }
-        if (E.order.value === 'name') {
-          items.sort(function (a, b) { return baseName(a.name).localeCompare(baseName(b.name), undefined, { numeric: true }); });
+        var okList = results.filter(function (r) { return !r.error; });
+        if (okList.length >= 2) {
+          var parts = [];
+          for (var k = 0; k < okList.length; k++) {
+            parts.push({ name: okList[k].fileName, data: new Uint8Array(await okList[k].blob.arrayBuffer()) });
+          }
+          bundleBlob = new Blob(makeZipParts(parts), { type: 'application/zip' });
+          download(bundleBlob, 'Các sách epub.zip');
+          toast('Đang tải 1 file zip gồm ' + okList.length + ' sách');
+        } else if (okList.length === 1) {
+          download(okList[0].blob, okList[0].fileName);
+          toast('Đang tải file epub');
         }
-        var chapters = makeChaptersFromTexts(items, { strip: E.strip.checked, titleFrom: E.titleFrom.value, dropDup: E.dup.checked });
-        var title = bookName();
-        var sample = chapters.slice(0, 5).map(function (c) { return c.lines.join(''); }).join('').slice(0, 3000);
-        var files = buildEpubFiles(chapters, {
-          title: title, author: E.author.value, uuid: newUuid(),
-          lang: /[\u4e00-\u9fff]/.test(sample) ? 'zh' : 'vi',
-          modified: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
-        });
-        var blob = new Blob(makeZipParts(files), { type: 'application/epub+zip' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = (safeName(title) || 'truyen') + '.epub';
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-
-        E.count.textContent = 'Đã tạo epub gồm ' + chapters.length + ' chương';
-        E.namesSum.textContent = 'Xem danh sách chương (' + chapters.length + ')';
-        E.names.innerHTML = '';
-        var w = Math.max(3, String(chapters.length).length);
-        chapters.forEach(function (ch, k) {
-          var row = document.createElement('div'); row.className = 'chname';
-          var n = document.createElement('span'); n.className = 'n'; n.textContent = String(k + 1).padStart(w, '0');
-          var t = document.createElement('span'); t.className = 't'; t.textContent = ch.title;
-          row.appendChild(n); row.appendChild(t); E.names.appendChild(row);
-        });
-        E.result.hidden = false; setNote(''); toast('Đang tải file epub');
+        renderResults();
+        setNote(okList.length >= 2 ? 'Đã tải 1 file zip chứa ' + okList.length + ' sách epub. Bấm nút bên dưới nếu cần tải lại hoặc tải từng sách.' : '', false);
       } catch (err) {
         setNote(explain(err), true); E.result.hidden = true;
       } finally {
@@ -420,6 +524,8 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
       }
     })();
   });
+
+  E.all.addEventListener('click', function () { if (bundleBlob) download(bundleBlob, 'Các sách epub.zip'); });
 
 })();
 </script>

@@ -78,6 +78,10 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 .fmtrow .e{display:block;font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
 .fmtrow .c{color:var(--muted);font-size:.85rem;white-space:nowrap;padding-top:2px}
 .fmtrow button{min-height:36px;padding:4px 10px;font-size:.9rem}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;background:var(--bg)}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+.drop-t{font-weight:600;margin:0 0 2px}
+.drop input[type=file]{padding:0}
 </style>
 </head>
 <body>
@@ -93,7 +97,11 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   <section aria-labelledby="s1">
     <h2 id="s1">Chia chương</h2>
     <label for="chFile">File truyện (.txt)</label>
-    <input type="file" id="chFile" accept=".txt,text/plain">
+    <div id="chDrop" class="drop">
+      <p class="drop-t">Kéo file truyện .txt thả vào đây</p>
+      <p class="hint" style="margin:0 0 8px">hoặc chọn tệp bên dưới</p>
+      <input type="file" id="chFile" accept=".txt,text/plain">
+    </div>
     <p id="chFileInfo" class="hint"></p>
 
     <label for="chKind">Kiểu tiêu đề chương</label>
@@ -202,8 +210,6 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
     <div id="chResult" hidden>
       <div id="chCount" class="chcount" role="status"></div>
-      <label for="chAuthor">Tác giả (không bắt buộc)</label>
-      <input type="text" id="chAuthor" autocomplete="off" spellcheck="false">
       <p id="chBookInfo" class="hint"></p>
       <div class="row" style="margin-top:12px">
         <button id="chEpub" class="primary" type="button" style="flex:1">Tải thành sách .epub</button>
@@ -620,7 +626,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   var fileBuf = null, fileName = '', chapters = [], names = [];
   function bookName() { return fileName.replace(/\.txt$/i, '').trim() || 'Truyện'; }
   var E = {
-    file: $('chFile'), info: $('chFileInfo'), enc: $('chEnc'), kind: $('chKind'),
+    drop: $('chDrop'), file: $('chFile'), info: $('chFileInfo'), enc: $('chEnc'), kind: $('chKind'),
     sampleWrap: $('chSampleWrap'), sample: $('chSample'), openWrap: $('chOpenWrap'), open: $('chOpen'), nameWrap: $('chNameWrap'),
     manualWrap: $('chManualWrap'), partsWrap: $('chPartsWrap'), parts: $('chParts'),
     tpl: $('chTpl'), start: $('chStart'),
@@ -628,7 +634,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     names: $('chNames'), namesSum: $('chNamesSum'),
     scanWrap: $('chScanWrap'), fmtList: $('chFmtList'), fmtIn: $('chFmtIn'), fmtAdd: $('chFmtAdd'),
     report: $('chScanReport'), summary: $('chScanSummary'), unBox: $('chUnknownBox'), unList: $('chUnknown'),
-    scanSplit: $('chScanSplit'), bookInfo: $('chBookInfo'), author: $('chAuthor'), epub: $('chEpub')
+    scanSplit: $('chScanSplit'), bookInfo: $('chBookInfo'), epub: $('chEpub')
   };
 
   function toast(msg) {
@@ -650,15 +656,34 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   }
   E.kind.addEventListener('change', syncKind);
 
-  E.file.addEventListener('change', function () {
-    var f = E.file.files && E.file.files[0];
+  function openFile(f, msg) {
     if (!f) return;
     f.arrayBuffer().then(function (buf) {
       fileBuf = buf; fileName = f.name;
       E.info.textContent = 'Đã chọn: ' + f.name + ' (' + Math.round(f.size / 1024).toLocaleString('vi-VN') + ' KB)';
-      E.result.hidden = true; E.report.hidden = true; lastScan = null; setNote('');
+      E.result.hidden = true; E.report.hidden = true; lastScan = null; setNote(msg || '');
     }, function () { setNote('Không mở được file.', true); });
+  }
+  E.file.addEventListener('change', function () { openFile(E.file.files && E.file.files[0]); });
+
+  /* ----- kéo thả file .txt vào khung (ô chọn tệp vẫn dùng được như cũ) ----- */
+  ['dragenter', 'dragover'].forEach(function (t) {
+    E.drop.addEventListener(t, function (e) { e.preventDefault(); E.drop.classList.add('over'); });
   });
+  ['dragleave', 'dragend'].forEach(function (t) {
+    E.drop.addEventListener(t, function () { E.drop.classList.remove('over'); });
+  });
+  E.drop.addEventListener('drop', function (e) {
+    e.preventDefault(); E.drop.classList.remove('over');
+    var fl = e.dataTransfer && e.dataTransfer.files;
+    if (!fl || !fl.length) return;
+    var f = fl[0];
+    if (/\.zip$/i.test(f.name)) { setNote('Đây là file zip. Trang này nhận file truyện .txt, còn file zip các chương thì dùng trang Tạo EPUB.', true); return; }
+    if (!/\.txt$/i.test(f.name) && f.type !== 'text/plain') { setNote('Hãy thả file truyện .txt.', true); return; }
+    openFile(f, fl.length > 1 ? 'Trang chỉ làm một file mỗi lần, đã lấy file đầu tiên: ' + f.name : '');
+  });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });   // thả trượt ra ngoài khung thì không bị mở file
+  window.addEventListener('drop', function (e) { e.preventDefault(); });
 
   function renderNames() {
     var box = E.names; box.innerHTML = '';
@@ -833,7 +858,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     var sample = chapters.slice(0, 5).map(function (c) { return c.lines.join(''); }).join('').slice(0, 3000);
     var title = bookName();
     var files = buildEpubFiles(chapters, {
-      title: title, author: E.author.value, uuid: newUuid(),
+      title: title, author: '', uuid: newUuid(),
       lang: /[\u4e00-\u9fff]/.test(sample) ? 'zh' : 'vi',
       modified: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
     });

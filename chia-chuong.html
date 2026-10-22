@@ -481,9 +481,16 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
         }
         if (s) cur.lines.push(s);
       }
+      if (parts.length > 1 && !cur.title && !cur.lines.length) awaitTitle = !!titleBelow;
     });
     push();
     if (!markers) return { chapters: [], error: 'Không thấy dấu phân cách nào trong file.' };
+    if (titleBelow) {                                        // chương chưa có tên mà dòng đầu trông như tiêu đề (Chương N, 第N章...) thì lấy làm tên
+      segs.forEach(function (sg) {
+        if (!sg.title && sg.lines.length && (RE_CH.test(sg.lines[0]) || RE_LATIN.test(sg.lines[0]) || RE_SPECIAL.test(sg.lines[0])) && titleLike(sg.lines[0]))
+          sg.title = cutTitle(sg.lines.shift());
+      });
+    }
     var out = segs.map(function (sg, i) {
       return { title: sg.title || tpl.replace(/\{n\}/g, String(startN + i)), lines: sg.lines };
     });

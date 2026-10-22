@@ -136,7 +136,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
       <p class="hint">Mỗi dấu là bắt đầu một chương mới (<b>===</b> khớp cả <b>=====</b>). File đã có dấu thì nhập dấu rồi bấm chia.</p>
       <p class="hint">Tên chương: <b>=== 第3章 重逢</b> hoặc <b>=== 第3章 重逢 ===</b>. Không có thì đặt theo mẫu bên dưới.</p>
       <label class="chk"><input type="checkbox" id="chTitleBelow" checked> Dòng ngay dưới dấu là tên chương</label>
-      <p class="hint">Ví dụ: dòng <b>===</b>, xuống dòng, rồi <b>第3章 重逢</b>. Chỉ lấy dòng ngắn, không kết thúc bằng 。！？ Bỏ tick nếu chương không có tiêu đề.</p>
+      <p class="hint">Ví dụ: dòng <b>===</b>, xuống dòng, rồi <b>第3章 重逢</b>. Chỉ lấy dòng không kết thúc bằng 。！？ Tên dài hơn 80 ký tự sẽ bị cắt. Bỏ tick nếu chương không có tiêu đề.</p>
     </div>
 
     <div id="chNameWrap" hidden>
@@ -434,6 +434,23 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
   /* Chia theo dấu phân cách. Dòng chỉ có dấu = ngắt chương. Chữ cùng dòng sau dấu ("=== 第3章 重逢")
      hoặc nằm giữa hai dấu ("=== 第3章 重逢 ===") là tên chương; không có thì đặt tên theo mẫu. */
+  /* Tên chương dài hơn 80 ký tự thì chỉ giữ 80 ký tự đầu (lùi về khoảng trắng gần nhất để không cụt giữa từ) */
+  function cutTitle(s) {
+    s = trimLine(s);
+    if (s.length <= 80) return s;
+    var c = s.slice(0, 80), sp = c.lastIndexOf(' ');
+    if (/\S/.test(s.charAt(80)) && sp > 40) c = c.slice(0, sp);
+    return trimLine(c);
+  }
+
+  /* Dòng có thể là tên chương: tối đa 150 ký tự, không kết thúc bằng dấu câu (bỏ qua ngoặc/nháy đóng ở cuối) */
+  function titleLike(s) {
+    s = trimLine(s);
+    if (!s || s.length > 150) return false;
+    s = s.replace(/[\s\u3000"'”’」』）)\]】》>]+$/, '');
+    return !!s && !/[。！？!?….，,；;：:]$/.test(s);
+  }
+
   function splitByMarker(text, tpl, startN, marker, titleBelow) {
     if (!tpl || tpl.indexOf('{n}') < 0) return { chapters: [], error: 'Mẫu tên cần có {n}, ví dụ 第{n}章.' };
     var MK = markerSource(marker);
@@ -447,20 +464,20 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
         if (!line) return;                                   // dòng trống giữa dấu và tiêu đề thì bỏ qua
         if (awaitTitle) {                                    // dòng đầu tiên sau dấu đứng riêng: có thể là tên chương
           awaitTitle = false;
-          if (line.length <= 40 && notSentence(line)) { cur.title = line; return; }
+          if (titleLike(line)) { cur.title = cutTitle(line); return; }
         }
         cur.lines.push(line); return;
       }
       awaitTitle = false;
       if (RE_ONLY.test(line)) { markers++; push(); cur = { title: null, lines: [] }; awaitTitle = !!titleBelow; return; }
       var w = RE_WRAP.exec(line);
-      if (w && w[1].length <= 40 && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: trimLine(w[1]), lines: [] }; return; }
+      if (w && w[1].length <= 150 && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: cutTitle(w[1]), lines: [] }; return; }
       var parts = raw.split(new RegExp(MK));
       for (var k = 0; k < parts.length; k++) {
         var s = trimLine(parts[k]);
         if (k > 0) {
           markers++; push(); cur = { title: null, lines: [] };
-          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && s && s.length <= 40) { cur.title = s; continue; }
+          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && s && s.length <= 150) { cur.title = cutTitle(s); continue; }
         }
         if (s) cur.lines.push(s);
       }

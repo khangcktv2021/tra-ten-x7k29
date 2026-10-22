@@ -240,14 +240,16 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
   function trimLine(l) { return l.replace(/^[\s\u3000]+|[\s\u3000]+$/g, ''); }
   function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  function notSentence(s) { return s && s.length <= 50 && !/[。！？!?]$/.test(s); }
+  /* Câu văn thường kết thúc bằng 。 , ， ; ； (bỏ qua nháy/ngoặc đóng). Tiêu đề có thể kết thúc bằng ！ ？ nên không loại */
+  function endsSentence(s) { return /[。，,；;][\s"'”’」』）)]*$/.test(s); }
+  function notSentence(s) { return s && s.length <= 50 && !endsSentence(s); }
 
   /* 1 = tiêu đề chương, 2 = tiêu đề quyển/tập, 0 = dòng thường */
   function headingType(line) {
     var s = trimLine(line);
-    if (!notSentence(s)) return 0;
+    if (!s || s.length > 150 || endsSentence(s)) return 0;
     if (RE_CH.test(s) || RE_SPECIAL.test(s) || RE_LATIN.test(s)) return 1;
-    if (RE_VOL.test(s)) return 2;
+    if (RE_VOL.test(s) && s.length <= 50) return 2;
     return 0;
   }
 
@@ -290,7 +292,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
   function makeTest(kind, sample) {
     if (kind === 'auto') return { test: headingType };
-    var res;
+    var res, maxLen = (kind === 'sample' || kind === 'formats') ? 50 : 150;   // dạng tự chép mẫu giữ giới hạn ngắn
     if (kind === 'sample' || kind === 'formats') {
       var ps = patternsFromSamples(sample);
       if (!ps.patterns.length) return { error: 'Cần ít nhất một dòng tiêu đề mẫu có số kèm chữ, ví dụ 第1章, 二. hoặc Chương 1.' };
@@ -303,7 +305,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     return {
       test: function (line) {
         var s = trimLine(line);
-        if (!notSentence(s)) return 0;
+        if (!s || s.length > maxLen || endsSentence(s)) return 0;
         for (var i = 0; i < res.length; i++) if (res[i].test(s)) return 1;
         if (RE_VOL.test(s) && s.length <= 30) return 2;
         return 0;

@@ -133,27 +133,10 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     <div id="chManualWrap" hidden>
       <label for="chMark">Dấu phân cách chương</label>
       <input type="text" id="chMark" value="////" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <p class="hint">Gõ dấu phân cách vào file truyện (bằng trình soạn thảo) ở chỗ muốn ngắt chương rồi nhập đúng dấu đó vào ô trên, ví dụ <b>////</b>, <b>===</b> hoặc <b>---</b>. Dấu là một ký tự lặp lại thì khớp từ chừng đó ký tự trở lên (<b>===</b> khớp cả <b>=====</b>). Mỗi chỗ có dấu là bắt đầu một chương mới. File đã có sẵn dấu thì không cần sửa gì, chọn file, nhập dấu rồi bấm bắt đầu chia.</p>
-      <p class="hint">Chữ cùng dòng sau dấu (<b>=== 第3章 重逢</b>) hoặc nằm giữa hai dấu (<b>=== 第3章 重逢 ===</b>) là tên chương. Không có thì đặt tên theo mẫu bên dưới.</p>
-    </div>
-
-    <div id="chNameWrap" hidden>
-      <div class="two">
-        <div>
-          <label for="chTpl">Mẫu tên chương ({n} là số thứ tự)</label>
-          <input type="text" id="chTpl" value="第{n}章" autocomplete="off" autocapitalize="off" spellcheck="false">
-        </div>
-        <div>
-          <label for="chStart">Bắt đầu từ số</label>
-          <input type="text" id="chStart" value="1" inputmode="numeric" autocomplete="off">
-        </div>
-      </div>
-    </div>
-
-    <div id="chOpenWrap" hidden>
-      <label for="chOpen">Đoạn mở đầu của từng chương theo thứ tự, mỗi dòng một chương (4 đến 5 chữ đầu)</label>
-      <textarea id="chOpen" lang="zh" placeholder="他走进客栈&#10;夜里下起了&#10;天亮之后" spellcheck="false"></textarea>
-      <p class="hint">Dùng cho file không có tiêu đề. Trang tìm lần lượt từng đoạn trong file (bỏ qua khoảng trắng) rồi cắt chương tại đó và đặt tên theo mẫu bên dưới. Nếu thấy cảnh báo đoạn bị trùng, hãy nhập dài hơn (8 đến 10 chữ).</p>
+      <p class="hint">Mỗi dấu là bắt đầu một chương mới (<b>===</b> khớp cả <b>=====</b>). File đã có dấu thì nhập dấu rồi bấm chia.</p>
+      <p class="hint">Tên chương: <b>=== 第3章 重逢</b> hoặc <b>=== 第3章 重逢 ===</b>. Không có thì đặt theo mẫu bên dưới.</p>
+      <label class="chk"><input type="checkbox" id="chTitleBelow" checked> Dòng ngay dưới dấu là tên chương</label>
+      <p class="hint">Ví dụ: dòng <b>===</b>, xuống dòng, rồi <b>第3章 重逢</b>. Chỉ lấy dòng ngắn, không kết thúc bằng 。！？ Bỏ tick nếu chương không có tiêu đề.</p>
     </div>
 
     <div id="chNameWrap" hidden>
@@ -451,17 +434,25 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
   /* Chia theo dấu phân cách. Dòng chỉ có dấu = ngắt chương. Chữ cùng dòng sau dấu ("=== 第3章 重逢")
      hoặc nằm giữa hai dấu ("=== 第3章 重逢 ===") là tên chương; không có thì đặt tên theo mẫu. */
-  function splitByMarker(text, tpl, startN, marker) {
+  function splitByMarker(text, tpl, startN, marker, titleBelow) {
     if (!tpl || tpl.indexOf('{n}') < 0) return { chapters: [], error: 'Mẫu tên cần có {n}, ví dụ 第{n}章.' };
     var MK = markerSource(marker);
     var RE_ANY = new RegExp(MK), RE_ONLY = new RegExp('^' + MK + '$');
     var RE_WRAP = new RegExp('^' + MK + '\\s*(.+?)\\s*' + MK + '$');
-    var segs = [], cur = { title: null, lines: [] }, markers = 0;
+    var segs = [], cur = { title: null, lines: [] }, markers = 0, awaitTitle = false;
     function push() { if (cur.lines.length || cur.title) segs.push(cur); }
     text.replace(/\r\n?/g, '\n').split('\n').forEach(function (raw) {
       var line = trimLine(raw);
-      if (!RE_ANY.test(raw)) { if (line) cur.lines.push(line); return; }
-      if (RE_ONLY.test(line)) { markers++; push(); cur = { title: null, lines: [] }; return; }
+      if (!RE_ANY.test(raw)) {
+        if (!line) return;                                   // dòng trống giữa dấu và tiêu đề thì bỏ qua
+        if (awaitTitle) {                                    // dòng đầu tiên sau dấu đứng riêng: có thể là tên chương
+          awaitTitle = false;
+          if (line.length <= 40 && notSentence(line)) { cur.title = line; return; }
+        }
+        cur.lines.push(line); return;
+      }
+      awaitTitle = false;
+      if (RE_ONLY.test(line)) { markers++; push(); cur = { title: null, lines: [] }; awaitTitle = !!titleBelow; return; }
       var w = RE_WRAP.exec(line);
       if (w && w[1].length <= 40 && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: trimLine(w[1]), lines: [] }; return; }
       var parts = raw.split(new RegExp(MK));
@@ -664,7 +655,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     scanWrap: $('chScanWrap'), fmtList: $('chFmtList'), fmtIn: $('chFmtIn'), fmtAdd: $('chFmtAdd'),
     report: $('chScanReport'), summary: $('chScanSummary'), unBox: $('chUnknownBox'), unList: $('chUnknown'),
     scanSplit: $('chScanSplit'), bookInfo: $('chBookInfo'), epub: $('chEpub'),
-    mark: $('chMark'), filesList: $('chFiles'), filesClear: $('chFilesClear'),
+    mark: $('chMark'), below: $('chTitleBelow'), filesList: $('chFiles'), filesClear: $('chFilesClear'),
     batch: $('chBatch'), batchCount: $('chBatchCount'), batchList: $('chBatchList'), batchAll: $('chBatchAll')
   };
 
@@ -910,7 +901,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   function splitFor(text, k) {
     var sn = parseInt(E.start.value, 10); if (isNaN(sn)) sn = 1;
     if (k === 'opening') return splitByOpenings(text, E.open.value, E.tpl.value, sn);
-    if (k === 'manual') return splitByMarker(text, E.tpl.value, sn, E.mark.value);
+    if (k === 'manual') return splitByMarker(text, E.tpl.value, sn, E.mark.value, E.below.checked);
     if (k === 'parts') return splitIntoParts(text, E.parts.value);
     return splitText(text, k, E.sample.value);          // 'common' hoặc 'sample'
   }

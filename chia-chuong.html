@@ -443,6 +443,13 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     return trimLine(c);
   }
 
+  /* Dòng mở đầu bằng "Chương N", "第N章", 楔子... thì chắc chắn là tiêu đề dù dài (sẽ được cắt còn 80 ký tự) */
+  function headLike(s) {
+    s = trimLine(s);
+    return s.length > 0 && s.length <= 500 && (RE_CH.test(s) || RE_LATIN.test(s) || RE_SPECIAL.test(s));
+  }
+  function titleOk(s) { return titleLike(s) || headLike(s); }
+
   /* Dòng có thể là tên chương: tối đa 150 ký tự, không kết thúc bằng dấu câu (bỏ qua ngoặc/nháy đóng ở cuối) */
   function titleLike(s) {
     s = trimLine(s);
@@ -464,20 +471,20 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
         if (!line) return;                                   // dòng trống giữa dấu và tiêu đề thì bỏ qua
         if (awaitTitle) {                                    // dòng đầu tiên sau dấu đứng riêng: có thể là tên chương
           awaitTitle = false;
-          if (titleLike(line)) { cur.title = cutTitle(line); return; }
+          if (titleOk(line)) { cur.title = cutTitle(line); return; }
         }
         cur.lines.push(line); return;
       }
       awaitTitle = false;
       if (RE_ONLY.test(line)) { markers++; push(); cur = { title: null, lines: [] }; awaitTitle = !!titleBelow; return; }
       var w = RE_WRAP.exec(line);
-      if (w && w[1].length <= 150 && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: cutTitle(w[1]), lines: [] }; return; }
+      if (w && titleOk(w[1]) && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: cutTitle(w[1]), lines: [] }; return; }
       var parts = raw.split(new RegExp(MK));
       for (var k = 0; k < parts.length; k++) {
         var s = trimLine(parts[k]);
         if (k > 0) {
           markers++; push(); cur = { title: null, lines: [] };
-          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && s && s.length <= 150) { cur.title = cutTitle(s); continue; }
+          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && s && titleOk(s)) { cur.title = cutTitle(s); continue; }
         }
         if (s) cur.lines.push(s);
       }
@@ -487,7 +494,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     if (!markers) return { chapters: [], error: 'Không thấy dấu phân cách nào trong file.' };
     if (titleBelow) {                                        // chương chưa có tên mà dòng đầu trông như tiêu đề (Chương N, 第N章...) thì lấy làm tên
       segs.forEach(function (sg) {
-        if (!sg.title && sg.lines.length && (RE_CH.test(sg.lines[0]) || RE_LATIN.test(sg.lines[0]) || RE_SPECIAL.test(sg.lines[0])) && titleLike(sg.lines[0]))
+        if (!sg.title && sg.lines.length && headLike(sg.lines[0]))
           sg.title = cutTitle(sg.lines.shift());
       });
     }

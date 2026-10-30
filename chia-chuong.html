@@ -118,6 +118,20 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
       <option value="parts">Chia nhỏ file</option>
     </select>
 
+    <div id="chCommonWrap">
+      <div id="chUnitBox">
+        <label for="chUnit">Đằng sau 第 + số là chữ</label>
+        <select id="chUnit">
+          <option value="章">章 (第一章, 第1章)</option>
+          <option value="节">节 (第一节)</option>
+          <option value="回">回 (第一回)</option>
+          <option value="话">话 (第一话)</option>
+          <option value="集">集 (第一集)</option>
+          <option value="all">Tất cả: 章 节 回 话 集</option>
+        </select>
+      </div>
+    </div>
+
     <div id="chSampleWrap" hidden>
       <label for="chSample">Mỗi dòng một kiểu tiêu đề mẫu, chép từ truyện</label>
       <textarea id="chSample" lang="zh" placeholder="第一章 初入江湖&#10;二.&#10;第10章 重逢" spellcheck="false"></textarea>
@@ -133,10 +147,27 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     <div id="chManualWrap" hidden>
       <label for="chMark">Dấu phân cách chương</label>
       <input type="text" id="chMark" value="////" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <p class="hint">Mỗi dấu là bắt đầu một chương mới (<b>===</b> khớp cả <b>=====</b>). File đã có dấu thì nhập dấu rồi bấm chia.</p>
-      <p class="hint">Tên chương: <b>=== 第3章 重逢</b> hoặc <b>=== 第3章 重逢 ===</b>. Không có thì đặt theo mẫu bên dưới.</p>
-      <label class="chk"><input type="checkbox" id="chTitleBelow" checked> Dòng ngay dưới dấu là tên chương</label>
-      <p class="hint">Ví dụ: dòng <b>===</b>, xuống dòng, rồi <b>第3章 重逢</b>. Chỉ lấy dòng không kết thúc bằng 。！？ Tên dài hơn 80 ký tự sẽ bị cắt. Bỏ tick nếu chương không có tiêu đề.</p>
+      <p class="hint">Gõ dấu phân cách vào file truyện (bằng trình soạn thảo) ở chỗ muốn ngắt chương rồi nhập đúng dấu đó vào ô trên, ví dụ <b>////</b>, <b>===</b> hoặc <b>---</b>. Dấu là một ký tự lặp lại thì khớp từ chừng đó ký tự trở lên (<b>===</b> khớp cả <b>=====</b>). Mỗi chỗ có dấu là bắt đầu một chương mới. File đã có sẵn dấu thì không cần sửa gì, chọn file, nhập dấu rồi bấm bắt đầu chia.</p>
+      <p class="hint">Chữ cùng dòng sau dấu (<b>=== 第3章 重逢</b>) hoặc nằm giữa hai dấu (<b>=== 第3章 重逢 ===</b>) là tên chương. Không có thì đặt tên theo mẫu bên dưới.</p>
+    </div>
+
+    <div id="chNameWrap" hidden>
+      <div class="two">
+        <div>
+          <label for="chTpl">Mẫu tên chương ({n} là số thứ tự)</label>
+          <input type="text" id="chTpl" value="第{n}章" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="chStart">Bắt đầu từ số</label>
+          <input type="text" id="chStart" value="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div id="chOpenWrap" hidden>
+      <label for="chOpen">Đoạn mở đầu của từng chương theo thứ tự, mỗi dòng một chương (4 đến 5 chữ đầu)</label>
+      <textarea id="chOpen" lang="zh" placeholder="他走进客栈&#10;夜里下起了&#10;天亮之后" spellcheck="false"></textarea>
+      <p class="hint">Dùng cho file không có tiêu đề. Trang tìm lần lượt từng đoạn trong file (bỏ qua khoảng trắng) rồi cắt chương tại đó và đặt tên theo mẫu bên dưới. Nếu thấy cảnh báo đoạn bị trùng, hãy nhập dài hơn (8 đến 10 chữ).</p>
     </div>
 
     <div id="chNameWrap" hidden>
@@ -238,18 +269,67 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   };
   PRESETS.common = PRESETS.zhang;
 
-  function trimLine(l) { return l.replace(/^[\s\u3000]+|[\s\u3000]+$/g, ''); }
+  function trimLine(l) { return l.replace(/^[\s\u3000\u200b-\u200d\u2060\ufeff]+|[\s\u3000\u200b-\u200d\u2060\ufeff]+$/g, ''); }
   function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  /* Câu văn thường kết thúc bằng 。 , ， ; ； (bỏ qua nháy/ngoặc đóng). Tiêu đề có thể kết thúc bằng ！ ？ nên không loại */
-  function endsSentence(s) { return /[。，,；;][\s"'”’」』）)]*$/.test(s); }
-  function notSentence(s) { return s && s.length <= 50 && !endsSentence(s); }
+  /* Tiêu đề có thể kết thúc bằng ！？… nên chỉ loại dòng dài kết thúc như một câu văn */
+  function notSentence(s) {
+    if (!s || s.length > 80) return false;
+    if (/[。”"」』]$/.test(s) && s.length > 20) return false;
+    return true;
+  }
+  /* Bỏ ký hiệu trang trí đầu dòng khi nhận diện tiêu đề: 【第2章】, # 第2章, **第2章** */
+  function stripDeco(s) { return s.replace(/^[【\[(（#*\s]+/, ''); }
+  /* Dòng s có khớp mẫu re như một tiêu đề không. Dòng kết thúc bằng dấu câu (như 第2章·他是谁？) chỉ nhận khi
+     ngay sau 第N章 là dấu ngăn cách (khoảng trắng, ·, :, 、...) chứ không phải chữ liền như câu văn thường */
+  function headingOk(s, re) {
+    if (!s || s.length > 80) return false;
+    var m = re.exec(s);
+    if (!m) return false;
+    if (/[。！？!?”"」』]$/.test(s)) return /^[\s·・:：、.．\-—_（(\[【]/.test(s.slice(m[0].length));
+    return true;
+  }
+  /* Đổi số trong tiêu đề (一, 十二, 一百零五, 12, １２) thành số nguyên; không đổi được thì trả -1 */
+  function cn2num(s) {
+    s = s.replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    var D = { '零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+              '壹': 1, '贰': 2, '叁': 3, '肆': 4, '伍': 5, '陆': 6, '柒': 7, '捌': 8, '玖': 9 };
+    var U = { '十': 10, '拾': 10, '百': 100, '佰': 100, '千': 1000, '仟': 1000 };
+    if (!/[十拾百佰千仟万]/.test(s)) {                       // 一二三 = 123
+      var p = '';
+      for (var i = 0; i < s.length; i++) { if (D[s[i]] === undefined) return -1; p += D[s[i]]; }
+      return p ? parseInt(p, 10) : -1;
+    }
+    var total = 0, section = 0, num = 0;
+    for (var j = 0; j < s.length; j++) {
+      var c = s[j];
+      if (D[c] !== undefined) num = D[c];
+      else if (U[c]) { section += (num || 1) * U[c]; num = 0; }
+      else if (c === '万') { total += (section + num || 1) * 10000; section = 0; num = 0; }
+      else return -1;
+    }
+    return total + section + num;
+  }
+  /* Tìm số chương bị nhảy cách (có 第1章, 第3章 mà thiếu 第2章). Trả về mảng số thiếu (tối đa 8) */
+  function findGaps(chs) {
+    var re = new RegExp('^\\s*(?:[【\\[(（#*]\\s*)?(?:第\\s*(' + NUMC + ')\\s*[章节節回话話集]|(' + NUMC + ')\\s*[、.．，,](?![0-9０-９]))');
+    var nums = [];
+    chs.forEach(function (c) { var m = re.exec(c.title); if (m) { var v = cn2num(m[1] || m[2]); if (v >= 0) nums.push(v); } });
+    if (nums.length < 3) return [];
+    var miss = [];
+    for (var i = 1; i < nums.length && miss.length < 8; i++) {
+      var a = nums[i - 1], b = nums[i];
+      if (b > a + 1 && b - a <= 2000) for (var k = a + 1; k < b && miss.length < 8; k++) miss.push(k);
+    }
+    return miss;
+  }
 
   /* 1 = tiêu đề chương, 2 = tiêu đề quyển/tập, 0 = dòng thường */
   function headingType(line) {
-    var s = trimLine(line);
-    if (!s || s.length > 150 || endsSentence(s)) return 0;
-    if (RE_CH.test(s) || RE_SPECIAL.test(s) || RE_LATIN.test(s)) return 1;
-    if (RE_VOL.test(s) && s.length <= 50) return 2;
+    var s = stripDeco(trimLine(line));
+    if (!s) return 0;
+    if (headingOk(s, RE_CH) || headingOk(s, RE_SPECIAL) || headingOk(s, RE_LATIN)) return 1;
+    if (headingOk(s, RE_VOL)) return 2;
     return 0;
   }
 
@@ -290,13 +370,29 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     return { patterns: res, bad: bad };
   }
 
+  /* Kiểu "phổ biến": o = {unit, style}. style 'zhang' = 第一章 Tên chương (chữ sau số do unit quyết định),
+     style 'num' = 1、Tên chương hoặc 二百二十、Tên chương */
+  function unitClass(u) {
+    if (u === 'all') return '[章节節回话話集]';
+    if (u === '节') return '[节節]';
+    if (u === '话') return '[话話]';
+    return escapeRe(u || '章');
+  }
+  function commonPattern(o) {
+    o = o || {};
+    if (o.style === 'num') return new RegExp('^\\s*' + NUMC + '\\s*[、.．，,](?![0-9０-９])');
+    return new RegExp('^第\\s*' + NUMC + '\\s*' + unitClass(o.unit));
+  }
+
   function makeTest(kind, sample) {
     if (kind === 'auto') return { test: headingType };
-    var res, maxLen = (kind === 'sample' || kind === 'formats') ? 50 : 150;   // dạng tự chép mẫu giữ giới hạn ngắn
+    var res;
     if (kind === 'sample' || kind === 'formats') {
       var ps = patternsFromSamples(sample);
       if (!ps.patterns.length) return { error: 'Cần ít nhất một dòng tiêu đề mẫu có số kèm chữ, ví dụ 第1章, 二. hoặc Chương 1.' };
       res = ps.patterns;
+    } else if (kind === 'common') {
+      res = [commonPattern(sample)];
     } else if (PRESETS[kind]) {
       res = [PRESETS[kind]];
     } else {
@@ -304,9 +400,9 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     }
     return {
       test: function (line) {
-        var s = trimLine(line);
-        if (!s || s.length > maxLen || endsSentence(s)) return 0;
-        for (var i = 0; i < res.length; i++) if (res[i].test(s)) return 1;
+        var s = stripDeco(trimLine(line));
+        if (!s) return 0;
+        for (var i = 0; i < res.length; i++) if (headingOk(s, res[i])) return 1;
         if (RE_VOL.test(s) && s.length <= 30) return 2;
         return 0;
       }
@@ -348,9 +444,10 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     var infos = formats.map(function (f) { return { sample: f, re: patternFromFormat(f), idx: [], examples: [] }; });
     var matchedAny = {};
     lines.forEach(function (s, i) {
-      if (!notSentence(s)) return;
+      var s2 = stripDeco(s);
+      if (!s2) return;
       infos.forEach(function (info) {
-        if (info.re && info.re.test(s)) {
+        if (info.re && headingOk(s2, info.re)) {
           info.idx.push(i); matchedAny[i] = true;
           if (info.examples.length < 2) info.examples.push(s);
         }
@@ -436,70 +533,31 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
   /* Chia theo dấu phân cách. Dòng chỉ có dấu = ngắt chương. Chữ cùng dòng sau dấu ("=== 第3章 重逢")
      hoặc nằm giữa hai dấu ("=== 第3章 重逢 ===") là tên chương; không có thì đặt tên theo mẫu. */
-  /* Tên chương dài hơn 80 ký tự thì chỉ giữ 80 ký tự đầu (lùi về khoảng trắng gần nhất để không cụt giữa từ) */
-  function cutTitle(s) {
-    s = trimLine(s);
-    if (s.length <= 80) return s;
-    var c = s.slice(0, 80), sp = c.lastIndexOf(' ');
-    if (/\S/.test(s.charAt(80)) && sp > 40) c = c.slice(0, sp);
-    return trimLine(c);
-  }
-
-  /* Dòng mở đầu bằng "Chương N", "第N章", 楔子... thì chắc chắn là tiêu đề dù dài (sẽ được cắt còn 80 ký tự) */
-  function headLike(s) {
-    s = trimLine(s);
-    return s.length > 0 && s.length <= 500 && (RE_CH.test(s) || RE_LATIN.test(s) || RE_SPECIAL.test(s));
-  }
-  function titleOk(s) { return titleLike(s) || headLike(s); }
-
-  /* Dòng có thể là tên chương: tối đa 150 ký tự, không kết thúc bằng dấu câu (bỏ qua ngoặc/nháy đóng ở cuối) */
-  function titleLike(s) {
-    s = trimLine(s);
-    if (!s || s.length > 150) return false;
-    s = s.replace(/[\s\u3000"'”’」』）)\]】》>]+$/, '');
-    return !!s && !/[。！？!?….，,；;：:]$/.test(s);
-  }
-
-  function splitByMarker(text, tpl, startN, marker, titleBelow) {
+  function splitByMarker(text, tpl, startN, marker) {
     if (!tpl || tpl.indexOf('{n}') < 0) return { chapters: [], error: 'Mẫu tên cần có {n}, ví dụ 第{n}章.' };
     var MK = markerSource(marker);
     var RE_ANY = new RegExp(MK), RE_ONLY = new RegExp('^' + MK + '$');
     var RE_WRAP = new RegExp('^' + MK + '\\s*(.+?)\\s*' + MK + '$');
-    var segs = [], cur = { title: null, lines: [] }, markers = 0, awaitTitle = false;
+    var segs = [], cur = { title: null, lines: [] }, markers = 0;
     function push() { if (cur.lines.length || cur.title) segs.push(cur); }
     text.replace(/\r\n?/g, '\n').split('\n').forEach(function (raw) {
       var line = trimLine(raw);
-      if (!RE_ANY.test(raw)) {
-        if (!line) return;                                   // dòng trống giữa dấu và tiêu đề thì bỏ qua
-        if (awaitTitle) {                                    // dòng đầu tiên sau dấu đứng riêng: có thể là tên chương
-          awaitTitle = false;
-          if (titleOk(line)) { cur.title = cutTitle(line); return; }
-        }
-        cur.lines.push(line); return;
-      }
-      awaitTitle = false;
-      if (RE_ONLY.test(line)) { markers++; push(); cur = { title: null, lines: [] }; awaitTitle = !!titleBelow; return; }
+      if (!RE_ANY.test(raw)) { if (line) cur.lines.push(line); return; }
+      if (RE_ONLY.test(line)) { markers++; push(); cur = { title: null, lines: [] }; return; }
       var w = RE_WRAP.exec(line);
-      if (w && titleOk(w[1]) && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: cutTitle(w[1]), lines: [] }; return; }
+      if (w && w[1].length <= 40 && !RE_ANY.test(w[1])) { markers++; push(); cur = { title: trimLine(w[1]), lines: [] }; return; }
       var parts = raw.split(new RegExp(MK));
       for (var k = 0; k < parts.length; k++) {
         var s = trimLine(parts[k]);
         if (k > 0) {
           markers++; push(); cur = { title: null, lines: [] };
-          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && s && titleOk(s)) { cur.title = cutTitle(s); continue; }
+          if (k === 1 && parts.length === 2 && !trimLine(parts[0]) && s && s.length <= 40) { cur.title = s; continue; }
         }
         if (s) cur.lines.push(s);
       }
-      if (parts.length > 1 && !cur.title && !cur.lines.length) awaitTitle = !!titleBelow;
     });
     push();
     if (!markers) return { chapters: [], error: 'Không thấy dấu phân cách nào trong file.' };
-    if (titleBelow) {                                        // chương chưa có tên mà dòng đầu trông như tiêu đề (Chương N, 第N章...) thì lấy làm tên
-      segs.forEach(function (sg) {
-        if (!sg.title && sg.lines.length && headLike(sg.lines[0]))
-          sg.title = cutTitle(sg.lines.shift());
-      });
-    }
     var out = segs.map(function (sg, i) {
       return { title: sg.title || tpl.replace(/\{n\}/g, String(startN + i)), lines: sg.lines };
     });
@@ -680,6 +738,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   function bookName() { return fileName.replace(/\.txt$/i, '').trim() || 'Truyện'; }
   var E = {
     drop: $('chDrop'), file: $('chFile'), info: $('chFileInfo'), enc: $('chEnc'), kind: $('chKind'),
+    commonWrap: $('chCommonWrap'), unit: $('chUnit'),
     sampleWrap: $('chSampleWrap'), sample: $('chSample'), openWrap: $('chOpenWrap'), open: $('chOpen'), nameWrap: $('chNameWrap'),
     manualWrap: $('chManualWrap'), partsWrap: $('chPartsWrap'), parts: $('chParts'),
     tpl: $('chTpl'), start: $('chStart'),
@@ -688,7 +747,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
     scanWrap: $('chScanWrap'), fmtList: $('chFmtList'), fmtIn: $('chFmtIn'), fmtAdd: $('chFmtAdd'),
     report: $('chScanReport'), summary: $('chScanSummary'), unBox: $('chUnknownBox'), unList: $('chUnknown'),
     scanSplit: $('chScanSplit'), bookInfo: $('chBookInfo'), epub: $('chEpub'),
-    mark: $('chMark'), below: $('chTitleBelow'), filesList: $('chFiles'), filesClear: $('chFilesClear'),
+    mark: $('chMark'), filesList: $('chFiles'), filesClear: $('chFilesClear'),
     batch: $('chBatch'), batchCount: $('chBatchCount'), batchList: $('chBatchList'), batchAll: $('chBatchAll')
   };
 
@@ -700,6 +759,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
 
   function syncKind() {
     var k = E.kind.value;
+    E.commonWrap.hidden = (k !== 'common');
     E.sampleWrap.hidden = (k !== 'sample');
     E.openWrap.hidden = (k !== 'opening');
     E.manualWrap.hidden = (k !== 'manual');
@@ -808,6 +868,11 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
       : 'Đã chia được ' + n + ' chương' + (hasPre ? ' (và 1 phần mở đầu)' : '');
     renderNames();
     E.result.hidden = false; setNote('');
+    var gaps = findGaps(chapters);
+    if (gaps.length) {
+      setNote('Lưu ý: số chương bị nhảy cách, có thể đang thiếu ' + gaps.slice(0, 6).map(function (x) { return '第' + x + '章'; }).join(', ') + (gaps.length > 6 ? '...' : '') +
+              '. Tiêu đề các chương đó có thể khác kiểu hoặc không nằm riêng một dòng. Thử kiểu "Theo định dạng khác" hoặc "Theo định dạng danh sách" để kiểm tra.', true);
+    }
     E.bookInfo.textContent = 'Tên sách: ' + bookName() + ' (lấy theo tên file đã chọn)';
     if (r.warnings && r.warnings.length) {
       var w = r.warnings.slice(0, 4).map(function (x) { return 'dòng ' + x.line; }).join(', ');
@@ -934,9 +999,10 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
   function splitFor(text, k) {
     var sn = parseInt(E.start.value, 10); if (isNaN(sn)) sn = 1;
     if (k === 'opening') return splitByOpenings(text, E.open.value, E.tpl.value, sn);
-    if (k === 'manual') return splitByMarker(text, E.tpl.value, sn, E.mark.value, E.below.checked);
+    if (k === 'manual') return splitByMarker(text, E.tpl.value, sn, E.mark.value);
     if (k === 'parts') return splitIntoParts(text, E.parts.value);
-    return splitText(text, k, E.sample.value);          // 'common' hoặc 'sample'
+    if (k === 'common') return splitText(text, 'common', { unit: E.unit.value });
+    return splitText(text, k, E.sample.value);          // 'sample'
   }
 
   function makeEpubBlob(chs, title) {
@@ -971,7 +1037,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
       var m = document.createElement('div'); m.className = 'm';
       var nm = document.createElement('span'); nm.className = 's'; nm.textContent = r.error ? r.srcName : r.fileName;
       var ex = document.createElement('span'); ex.className = 'e';
-      ex.textContent = r.error ? r.error : (r.chapters.length + ' chương · đầu: ' + short(r.chapters[0].title, 18) + ' · cuối: ' + short(r.chapters[r.chapters.length - 1].title, 18));
+      ex.textContent = r.error ? r.error : (r.chapters.length + ' chương · đầu: ' + short(r.chapters[0].title, 18) + ' · cuối: ' + short(r.chapters[r.chapters.length - 1].title, 18) + (r.gaps && r.gaps.length ? ' · có thể thiếu: ' + r.gaps.slice(0, 4).join(', ') : ''));
       m.appendChild(nm); m.appendChild(ex); row.appendChild(m);
       if (!r.error) {
         var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Tải';
@@ -997,7 +1063,7 @@ details.names{margin:12px 0 0;padding:0;border:0;background:transparent}
           if (r.error) batchResults.push({ srcName: f.name, error: r.error });
           else if (!r.chapters.length) batchResults.push({ srcName: f.name, error: 'Không thấy chương nào theo kiểu đã chọn.' });
           else batchResults.push({ srcName: f.name, fileName: uniqueName(safeName(baseOf(f.name)) || 'truyen', used) + '.epub',
-                                   chapters: r.chapters, blob: makeEpubBlob(r.chapters, baseOf(f.name)) });
+                                   chapters: r.chapters, gaps: findGaps(r.chapters), blob: makeEpubBlob(r.chapters, baseOf(f.name)) });
         } catch (err) { batchResults.push({ srcName: f.name, error: 'Không đọc được file này.' }); }
       }
       var okList = batchResults.filter(function (r) { return !r.error; });
